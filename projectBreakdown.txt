@@ -5,4 +5,9 @@
 	- fifo
 
 - file i/o
-	- 
+	- read a line from a file (config)
+	- read next line
+		- drop if necessary	
+		- put in proper queue
+		- 
+- 

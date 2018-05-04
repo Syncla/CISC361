@@ -6,8 +6,26 @@
 
 - file i/o
 	- read a line from a file (config)
-	- read next line
-		- drop if necessary	
-		- put in proper queue
-		- 
+	- for every line until D 9999
+	
+		- read next line
+			- "A" job arrives (new job)
+				- drop if insufficient resources total	
+				- put in proper queue 
+					- if not enough mem
+						- hold 1 -> 1
+						- hold 2 -> 2
+					- else
+						- ready
+					
+			- "Q" job arrives (interrupt style)
+				- request for devices, specifies a device and job)
+					- if granted -> ready
+					- else -> wait
+					
+	- D9999
+ 
+- display function
+- variable for timestamp
+	- most always be advanced to the time of the next event cannot be incremented by fixed amount
 - 

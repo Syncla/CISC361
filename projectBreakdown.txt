@@ -1,10 +1,20 @@
-- sorted linked list (1)
+[j] - sorted linked list (1)
 	- shortest job first, then by arrival time
 	
-- sorted linked list (2)
+[j]- sorted linked list (2)
 	- fifo
 
-- file i/o
+[v]- file i/o
+
+- main
+
+=====================================================================================================
+- display function
+- variable for timestamp
+	- most always be advanced to the time of the next event cannot be incremented by fixed amount 
+
+
+general outline
 	- read a line from a file (config)
 	- for every line until D 9999
 	
@@ -24,8 +34,3 @@
 					- else -> wait
 					
 	- D9999
- 
-- display function
-- variable for timestamp
-	- most always be advanced to the time of the next event cannot be incremented by fixed amount
-- 

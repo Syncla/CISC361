@@ -10,8 +10,8 @@ typedef struct node{
     int mainMemory;
     int serial;
     int priority;
-    node *next;
-    node *prev;
+    struct node *next;
+    struct node *prev;
 }node;
 
 node * init(int jobID, int arrivalTime, int mainMemory, int serial,int priority);

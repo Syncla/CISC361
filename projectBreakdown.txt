@@ -1,0 +1,8 @@
+- sorted linked list (1)
+	- shortest job first, then by arrival time
+	
+- sorted linked list (2)
+	- fifo
+
+- file i/o
+	- 

@@ -1,113 +1,138 @@
-#include <sys/types.h>
+// Normal includes
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+// Threading includes
 #include <unistd.h>
 #include <pthread.h>
-#include <string.h>
-#include <stdlib.h>
 
-#define KNRM  "\x1B[0m"
-#define KRED  "\x1B[31m"
-#define KGRN  "\x1B[32m"
-#define KYEL  "\x1B[33m"
-#define KBLU  "\x1B[34m"
-#define KMAG  "\x1B[35m"
-#define KCYN  "\x1B[36m"
-#define KWHT  "\x1B[37m"
-#define buffSize 255
+// COLOR DEFINITIONS
+#define KNRM "\x1B[0m"
+#define KRED "\x1B[31m"
+#define KGRN "\x1B[32m"
+#define KYEL "\x1B[33m"
+#define KBLU "\x1B[34m"
+#define KMAG "\x1B[35m"
+#define KCYN "\x1B[36m"
+#define KWHT "\x1B[37m"
+
+// CONSTANT VARIABLE DECLARATIONS
+#define buffSize 255 // Buffer to hold each readline
+#define configSize 5 // How many tokens are in each config line
+
+// Variable to indicate if the program should run in debug mode
+int debug = 0;
+
+// Function declarations
 const char *getFilenameExt(const char *filename);
-void readLine(FILE * fp,char*buff);
+void readLine(FILE *fp, char **buff);
+
+// Main
 int main(int argc, char *argv[])
 {
-	int M=0;
-	int S=0;
-	int Q=0;
-	int time = 0;
-	char buff[buffSize];
-	FILE * inp;
-	char * fname = argv[1];
-	// Check for valid file name
-	char * filename = argv[1];
-	inp = fopen(filename,"r");
-	if (inp==NULL){
-		printf("%sInvalid file name %s%s\n",KRED,filename,KNRM);
-		return;
-	}
-	
-	// Check for valid extension
-	const char * ext = getFilenameExt(filename);
-	if (strcmp(ext,"txt")){
-		printf("%sInvalid file extension %s%s\n",KRED,ext,KNRM);
-		return;
-	}
-
-	printf("Opening file: %s\n",fname);
-	printf("Getting configuration\n");
-	readLine(inp,&buff);
-	if (strncmp(buff,"C",1)){
-		printf("%sNot a valid configuration line %s%s\n",KRED,KNRM,buff);
-		return;
-	}
-	else{
-		printf("Configuration is %s",buff);
-		// Split configuration based on spaces
-		char * token = strtok(buff," ");
-		int idx = 0;
-		while(token !=NULL){
-			if (idx==1){
-				time = atoi(token);
-			}
-			else if(idx==2){
-				char id[2];
-				id[1] = '\0';
-				strncpy(id,token,1);
-				if (!strncmp(id,"M",1)){
-					char num[10];
-					strcpy(num,token);
-					char * tmp = strtok(num,"=");
-					M=atoi(strtok(NULL,"="));
-				}
-			}
-			else if(idx==3){
-				char id[2];
-				id[1] = '\0';
-				strncpy(id,token,1);
-				if (!strncmp(id,"S",1)){
-					char num[10];
-					strcpy(num,token);
-					char * tmp = strtok(num,"=");
-					S=atoi(strtok(NULL,"="));
-				}
-			}
-			else if(idx==4){
-				char id[2];
-				id[1] = '\0';
-				strncpy(id,token,1);
-				if (!strncmp(id,"Q",1)){
-					char num[10];
-					strcpy(num,token);
-					char * tmp = strtok(num,"=");
-					Q=atoi(strtok(NULL,"="));
-				}
-			}
-			if (idx>5){
-				break;
-			}
-			printf("%d: %s\n",idx,token);
-			token = strtok(NULL," ");
-			idx++;
+	int M = 0;			 // Amount of main memory available
+	int S = 0;			 // Number of devices
+	int Q = 0;			 // Size of time quantum
+	int T = 0;			 // Start time
+	char buff[buffSize]; // Buffer to read lines into
+	FILE *inp;			 // File handle
+	char *filename = argv[1];
+	if (argc == 3)
+	{
+		if (!strcmp("-v\0", argv[2]))
+		{
+			debug = 1;
 		}
-		printf("Start Time:%d M=%d S=%d Q=%d\n",time,M,S,Q);
+	}
+	if (debug)
+		printf("Opening file: %s\n", filename);
+	inp = fopen(filename, "r");
+	// Check for valid file name
+	if (inp == NULL)
+	{
+		printf("%sInvalid file name %s%s\n", KRED, filename, KNRM);
+		return -1;
 	}
 
-	readLine(inp,&buff);
-	printf("%s",buff);	
+	// Check for valid extension
+	const char *ext = getFilenameExt(filename);
+	if (strcmp(ext, "txt"))
+	{
+		printf("%sInvalid file extension %s%s\n", KRED, ext, KNRM);
+		return -2;
+	}
+
+	if (debug)
+		printf("Getting configuration\n");
+	readLine(inp, &buff);
+	if (strncmp(buff, "C", 1))
+	{
+		printf("%sNot a valid configuration line %s%s\n", KRED, KNRM, buff);
+		return -3;
+	}
+	else
+	{
+		if (debug)
+			printf("Configuration is: %s\n", buff); // What was read from the file
+		// Split configuration based on spaces
+		char *tokens[configSize];
+		char *token = strtok(buff, " ");
+		int idx = 0;
+		while (token)
+		{
+			tokens[idx] = malloc(sizeof(char) * strlen(token));
+			strncpy(tokens[idx++], token, strlen(token));
+			token = strtok(NULL, " ");
+		}
+		for (int i = 0; i < configSize; i++)
+		{
+			token = strtok(tokens[i], "=");
+			while (token)
+			{
+				if (!strncmp(token, "M\0", 2))
+				{
+					M = atoi(strtok(NULL, "="));
+				}
+				else if (!strncmp(token, "S\0", 2))
+				{
+					S = atoi(strtok(NULL, "="));
+				}
+				else if (!strncmp(token, "Q\0", 2))
+				{
+					Q = atoi(strtok(NULL, "="));
+				}
+				else if (!strncmp(token, "C\0", 2))
+				{
+					T = atoi(tokens[++i]);
+				}
+				token = strtok(NULL, "=");
+			}
+		}
+		// What was parsed
+		if (debug)
+			printf("Start Time:%s%d%s | M=%s%d%s | S=%s%d%s | Q=%s%d%s\n", KGRN, T, KNRM, KGRN, M, KNRM, KGRN, S, KNRM, KGRN, Q, KNRM);
+	}
+
+	readLine(inp, &buff);
+	printf("%s", buff);
 	fclose(inp);
 	return 0;
 }
-void readLine(FILE * fp,char*buff){
-	fgets(buff,255,(FILE*)fp);
+void readLine(FILE *fp, char **buff)
+{
+	if (fgets(buff, 255, (FILE *)fp))
+	{
+		//Strip newline character
+		char *nL = strrchr(buff, '\n'); //Get pos of newline
+		if (nL)
+		{
+			*nL = '\0'; //If there is a newline, replace it with null char
+		}
+	}
 }
-const char *getFilenameExt(const char *filename) {
+const char *getFilenameExt(const char *filename)
+{
 	/*
 		This function consumes a file name and extracts the file extension
 		parameters:
@@ -117,7 +142,8 @@ const char *getFilenameExt(const char *filename) {
 	*/
 	const char *ext = strrchr(filename, '.');
 	// If there is no file extension, return an empty string
-	if (!ext || ext == filename) {
+	if (!ext || ext == filename)
+	{
 		return "";
 	}
 	// Return the file exension

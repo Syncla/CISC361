@@ -1,8 +1,9 @@
-#ifndef FIFOLL_H_INCLUDED
-#define FIFOLL_H_INCLUDED
-
+#ifndef FIFOLL_H
+#define FIFOLL_H
 #include "node.h"
-extern node *head;
-extern node *tail;
+void push(void *newData);
+struct node * pop();
+struct node* head;
+struct node* tail;
 
 #endif

@@ -14,6 +14,5 @@ typedef struct node{
     struct node *prev;
 }node;
 
-node * init(int jobID, int arrivalTime, int mainMemory, int serial,int priority);
 
 #endif

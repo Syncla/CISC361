@@ -9,6 +9,7 @@ typedef struct node{
     int arrivalTime;
     int mainMemory;
     int serial;
+    int runtime;
     int priority;
     struct node *next;
     struct node *prev;

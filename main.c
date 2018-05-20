@@ -188,6 +188,18 @@ int main(int argc, char *argv[])
 			}
 			if (debug)
 				printf("Arrival Time: %s%d%s | Job ID: %s%d%s | Memory usage: %s%d%s | Device usage: %s%d%s | Run time: %s%d%s | Priority: %s%d%s\n", KGRN, aT, KNRM, KGRN, id, KNRM, KGRN, mem, KNRM, KGRN, dev, KNRM, KGRN, run, KNRM, KGRN, pri, KNRM);
+			// Check if its a valid job
+			if (mem>M){
+				if (debug)
+					printf("%sError%s, job %s%d%s requires to much memory: have %s%d%s, %s%d%s requested\n",KRED,KNRM,KGRN,id,KNRM,KGRN,M,KNRM,KRED,mem,KNRM);
+				continue;
+			}
+			if (dev>S){
+				if (debug)
+					printf("%sError%s, job %s%d%s requires to many devices: have %s%d%s, %s%d%s requested\n",KRED,KNRM,KGRN,id,KNRM,KGRN,S,KNRM,KRED,dev,KNRM);
+				continue;
+			
+			}
 		}
 		// Handle request for devices
 		if (!strncmp("Q", buff, cmpSize))

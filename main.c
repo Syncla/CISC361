@@ -17,6 +17,11 @@
 #define KCYN "\x1B[36m"
 #define KWHT "\x1B[37m"
 
+// ERROR CODES
+#define INVALIDFILENAME -1
+#define INVALIDEXT -2
+#define INVALIDCONFIG -3
+#define EXIT 0
 // CONSTANT VARIABLE DECLARATIONS
 #define buffSize 255 // Buffer to hold each readline
 #define configSize 5 // How many tokens are in each config line
@@ -26,8 +31,8 @@ int debug = 0;
 
 // Function declarations
 const char *getFilenameExt(const char *filename);
-void readLine(FILE *fp, char **buff);
-
+void readLine(FILE *fp, char buff[255]);
+void clearBuff(char buff[255]);
 // Main
 int main(int argc, char *argv[])
 {
@@ -53,7 +58,7 @@ int main(int argc, char *argv[])
 	if (inp == NULL)
 	{
 		printf("%sInvalid file name %s%s\n", KRED, filename, KNRM);
-		return -1;
+		return INVALIDFILENAME;
 	}
 
 	// Check for valid extension
@@ -61,16 +66,16 @@ int main(int argc, char *argv[])
 	if (strcmp(ext, "txt"))
 	{
 		printf("%sInvalid file extension %s%s\n", KRED, ext, KNRM);
-		return -2;
+		return INVALIDEXT;
 	}
 	// Get configuration
 	if (debug)
 		printf("Getting configuration\n");
-	readLine(inp, &buff);
+	readLine(inp, buff);
 	if (strncmp(buff, "C", 1))
 	{
 		printf("%sNot a valid configuration line %s%s\n", KRED, KNRM, buff);
-		return -3;
+		return INVALIDCONFIG;
 	}
 	else
 	{
@@ -114,14 +119,20 @@ int main(int argc, char *argv[])
 		if (debug)
 			printf("Start Time:%s%d%s | M=%s%d%s | S=%s%d%s | Q=%s%d%s\n", KGRN, T, KNRM, KGRN, M, KNRM, KGRN, S, KNRM, KGRN, Q, KNRM);
 	}
-	
-	readLine(inp, &buff);
-	printf("%s", buff);
+	readLine(inp, buff);
+	printf("%c\n", buff[0]);
 	fclose(inp);
-	return 0;
+	return EXIT;
 }
-void readLine(FILE *fp, char **buff)
+void clearBuff(char buff[255])
 {
+	for (int i = 0;i<255;i++){
+		buff[i]=NULL;
+	}
+}
+void readLine(FILE *fp, char buff[255])
+{
+	clearBuff(buff);
 	if (fgets(buff, 255, (FILE *)fp))
 	{
 		//Strip newline character

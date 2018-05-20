@@ -38,6 +38,7 @@ int main(int argc, char *argv[])
 	char buff[buffSize]; // Buffer to read lines into
 	FILE *inp;			 // File handle
 	char *filename = argv[1];
+	// Check if verbose output is on
 	if (argc == 3)
 	{
 		if (!strcmp("-v\0", argv[2]))
@@ -62,7 +63,7 @@ int main(int argc, char *argv[])
 		printf("%sInvalid file extension %s%s\n", KRED, ext, KNRM);
 		return -2;
 	}
-
+	// Get configuration
 	if (debug)
 		printf("Getting configuration\n");
 	readLine(inp, &buff);
@@ -113,7 +114,7 @@ int main(int argc, char *argv[])
 		if (debug)
 			printf("Start Time:%s%d%s | M=%s%d%s | S=%s%d%s | Q=%s%d%s\n", KGRN, T, KNRM, KGRN, M, KNRM, KGRN, S, KNRM, KGRN, Q, KNRM);
 	}
-
+	
 	readLine(inp, &buff);
 	printf("%s", buff);
 	fclose(inp);

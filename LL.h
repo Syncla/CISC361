@@ -13,6 +13,8 @@ struct node
     int runTime;
     int priority;
     int devicesAssigned;
+    int timeLeft;
+    int timeFinished;
     struct node *next;
     struct node *prev;
 
@@ -32,6 +34,8 @@ struct LL *pop(struct LL *); //REMOVES FIRST IN FROM THE LIST
 
 struct LL *list_new(void);         //CREATES NEW LINKED LIST
 struct LL *list_free(struct LL *); //
+
+void cpyNode(struct node *, struct node *);
 
 void printLL(const struct LL *);     //PRINTS ENTIRE LINKED LIST
 void printNode(const struct node *); //PRINTS A NODE

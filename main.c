@@ -26,18 +26,18 @@
 #define INVALIDCONFIG -3
 #define EXIT 0
 // Function codes
-#define OK 1			// Function succeded
-#define EOFREACHED 0	// Function failed
+#define OK 1		 // Function succeded
+#define EOFREACHED 0 // Function failed
 
 // CONSTANT VARIABLE DECLARATIONS
 #define buffSize 255 // Buffer to hold each readline
 #define configSize 5 // How many tokens are in each config line
 // How many parameters to parse in
-#define jobsize 7		// Parse 7 parameters on a job arrival
-#define requestsize 4	// Parse 4 parameters on a device request
-#define releasesize 4	// Parse 4 parameters on a device release
-#define displaysize 2	// Parse 2 parameters on a display
-#define DEF -1			// Default integer value
+#define jobsize 7	 // Parse 7 parameters on a job arrival
+#define requestsize 4 // Parse 4 parameters on a device request
+#define releasesize 4 // Parse 4 parameters on a device release
+#define displaysize 2 // Parse 2 parameters on a display
+#define DEF -1		  // Default integer value
 #define cmpSize 1
 // Variable to indicate if the program should run in debug mode
 // If in debug mode, a verbose output will be displayed so its easier to see what went wrong
@@ -56,11 +56,11 @@ int main(int argc, char *argv[])
 	int Q = 0;			 // Size of time quantum
 	int T = 0;			 // Start time
 	char buff[buffSize]; // Buffer to read lines into
-	
-	struct LL* hQ1 = list_new();	// SJF Linked List
-    struct LL* hQ2 = list_new();	// FIFO Linked List
 
-	FILE *inp;			 // File handle
+	struct LL *hQ1 = list_new(); // SJF Linked List
+	struct LL *hQ2 = list_new(); // FIFO Linked List
+
+	FILE *inp; // File handle
 	char *filename = argv[1];
 	// Check if verbose output is on
 	if (argc == 3)
@@ -196,22 +196,25 @@ int main(int argc, char *argv[])
 			if (debug)
 				printf("Arrival Time: %s%d%s | Job ID: %s%d%s | Memory usage: %s%d%s | Device usage: %s%d%s | Run time: %s%d%s | Priority: %s%d%s\n", KGRN, aT, KNRM, KGRN, id, KNRM, KGRN, mem, KNRM, KGRN, dev, KNRM, KGRN, run, KNRM, KGRN, pri, KNRM);
 			// Check if its a valid job
-			if (mem>M){
+			if (mem > M)
+			{
 				if (debug)
-					printf("%sError%s, job %s%d%s requires to much memory: have %s%d%s, %s%d%s requested\n",KRED,KNRM,KGRN,id,KNRM,KGRN,M,KNRM,KRED,mem,KNRM);
+					printf("%sError%s, job %s%d%s requires to much memory: have %s%d%s, %s%d%s requested\n", KRED, KNRM, KGRN, id, KNRM, KGRN, M, KNRM, KRED, mem, KNRM);
 				continue;
 			}
-			if (dev>S){
+			if (dev > S)
+			{
 				if (debug)
-					printf("%sError%s, job %s%d%s requires to many devices: have %s%d%s, %s%d%s requested\n",KRED,KNRM,KGRN,id,KNRM,KGRN,S,KNRM,KRED,dev,KNRM);
+					printf("%sError%s, job %s%d%s requires to many devices: have %s%d%s, %s%d%s requested\n", KRED, KNRM, KGRN, id, KNRM, KGRN, S, KNRM, KRED, dev, KNRM);
 				continue;
-			
 			}
-			if (pri==1){
-				pushSJF(hQ1,id,aT,mem,dev,run,pri);
+			if (pri == 1)
+			{
+				pushSJF(hQ1, id, aT, mem, dev, run, pri);
 			}
-			else{
-				pushFIFO(hQ2,id,aT,mem,dev,run,pri);
+			else
+			{
+				pushFIFO(hQ2, id, aT, mem, dev, run, pri);
 			}
 		}
 		// Handle request for devices
@@ -240,7 +243,7 @@ int main(int argc, char *argv[])
 					{
 						id = atoi(strtok(NULL, "="));
 					}
-					
+
 					else if (!strncmp(token, "D\0", cmpSize))
 					{
 						dev = atoi(strtok(NULL, "="));
@@ -281,7 +284,7 @@ int main(int argc, char *argv[])
 					{
 						id = atoi(strtok(NULL, "="));
 					}
-					
+
 					else if (!strncmp(token, "D\0", cmpSize))
 					{
 						dev = atoi(strtok(NULL, "="));
@@ -295,25 +298,25 @@ int main(int argc, char *argv[])
 			}
 			if (debug)
 				printf("Arrival Time: %s%d%s | Job ID: %s%d%s | Devices requested: %s%d%s\n", KGRN, aT, KNRM, KGRN, id, KNRM, KGRN, dev, KNRM);
-		}		
+		}
 		// Handle display
 		if (!strncmp("D", buff, cmpSize))
 		{
 			if (debug)
 				printf("Display has arrived\n");
-			int aT = NULL;
+			int aT = DEF;
 			char *tokens[displaysize];
 			char *token = strtok(buff, " ");
 			int idx = 0;
 			while (token)
 			{
-				tokens[idx] = (char*)malloc(sizeof(char) * strlen(token));
+				tokens[idx] = (char *)malloc(sizeof(char) * strlen(token));
 				strncpy(tokens[idx++], token, strlen(token));
 				token = strtok(NULL, " ");
 			}
 			for (int i = 0; i < displaysize; i++)
 			{
-				
+
 				token = strtok(tokens[i], "=");
 				while (token)
 				{
@@ -327,31 +330,26 @@ int main(int argc, char *argv[])
 			if (debug)
 				printf("Arrival Time: %s%d%s\n", KGRN, aT, KNRM);
 			FILE *out;
-			char * name = malloc(sizeof(char)*(strlen(filename)-3));
-			char * outName = malloc(sizeof(char)*(strlen(name)+4));
-			strncpy(name,filename,strlen(filename)-3);
-			name[strlen(name)-1] = '\0';
-			snprintf(outName,strlen(name)+15,"%s_D%d.json",name,aT);
-			out = fopen(outName,"w");
-			fprintf(out,"{\n");
-			fprintf(out,"\t\"current_time\":%d,\n",T);
-			fprintf(out,"\t\"total_memory\":%d,\n",M);
-			fprintf(out,"\t\"available_memory\":%d,\n",M-M);
-			fprintf(out,"\t\"total_devices\":%d,\n",S);
-			fprintf(out,"\t\"available_devices\":%d,\n",S-S);
-			fprintf(out,"\t\"quantum\":%d\n",Q);
-			fprintf(out,"}\0");
+			char *name = malloc(sizeof(char) * (strlen(filename) - 3));
+			char *outName = malloc(sizeof(char) * (strlen(name) + 4));
+			strncpy(name, filename, strlen(filename) - 3);
+			name[strlen(name) - 1] = '\0';
+			snprintf(outName, strlen(name) + 15, "%s_D%d.json", name, aT);
+			out = fopen(outName, "w");
+			fprintf(out, "{\n");
+			fprintf(out, "\t\"current_time\":%d,\n", T);
+			fprintf(out, "\t\"total_memory\":%d,\n", M);
+			fprintf(out, "\t\"available_memory\":%d,\n", M - M);
+			fprintf(out, "\t\"total_devices\":%d,\n", S);
+			fprintf(out, "\t\"available_devices\":%d,\n", S - S);
+			fprintf(out, "\t\"quantum\":%d\n", Q);
+			fprintf(out, "}\0");
 			fclose(out);
 			free(outName);
 			free(name);
 		}
-		
 	}
-	printf("\n\nHold queue 1:\n");
-	printLL(hQ1);
 	
-	printf("Hold queue 2:\n");
-	printLL(hQ2);
 	fclose(inp);
 	return EXIT;
 }

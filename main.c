@@ -34,7 +34,8 @@
 #define requestsize 4	// Parse 4 parameters on a device request
 #define releasesize 4	// Parse 4 parameters on a device release
 #define displaysize 2	// Parse 2 parameters on a display
-
+#define DEF -1			// Default integer value
+#define cmpSize 1
 // Variable to indicate if the program should run in debug mode
 // If in debug mode, a verbose output will be displayed so its easier to see what went wrong
 int debug = 0;
@@ -134,16 +135,16 @@ int main(int argc, char *argv[])
 	while (readLine(inp, buff))
 	{
 		// Handle job arrival
-		if (!strncmp("A", buff, 1))
+		if (!strncmp("A", buff, cmpSize))
 		{
 			if (debug)
 				printf("New job has arrived\n");
-			int aT = NULL;
-			int id = NULL;
-			int pri = NULL;
-			int mem = NULL;
-			int dev = NULL;
-			int run = NULL;
+			int aT = DEF;
+			int id = DEF;
+			int pri = DEF;
+			int mem = DEF;
+			int dev = DEF;
+			int run = DEF;
 			char *tokens[jobsize];
 			char *token = strtok(buff, " ");
 			int idx = 0;
@@ -158,27 +159,27 @@ int main(int argc, char *argv[])
 				token = strtok(tokens[i], "=");
 				while (token)
 				{
-					if (!strncmp(token, "J\0", 2))
+					if (!strncmp(token, "J\0", cmpSize))
 					{
 						id = atoi(strtok(NULL, "="));
 					}
-					else if (!strncmp(token, "M\0", 2))
+					else if (!strncmp(token, "M\0", cmpSize))
 					{
 						mem = atoi(strtok(NULL, "="));
 					}
-					else if (!strncmp(token, "S\0", 2))
+					else if (!strncmp(token, "S\0", cmpSize))
 					{
 						dev = atoi(strtok(NULL, "="));
 					}
-					else if (!strncmp(token, "R\0", 2))
+					else if (!strncmp(token, "R\0", cmpSize))
 					{
 						run = atoi(strtok(NULL, "="));
 					}
-					else if (!strncmp(token, "P\0", 2))
+					else if (!strncmp(token, "P\0", cmpSize))
 					{
 						pri = atoi(strtok(NULL, "="));
 					}
-					else if (!strncmp(token, "A\0", 2))
+					else if (!strncmp(token, "A\0", cmpSize))
 					{
 						aT = atoi(tokens[++i]);
 					}
@@ -187,9 +188,21 @@ int main(int argc, char *argv[])
 			}
 			if (debug)
 				printf("Arrival Time: %s%d%s | Job ID: %s%d%s | Memory usage: %s%d%s | Device usage: %s%d%s | Run time: %s%d%s | Priority: %s%d%s\n", KGRN, aT, KNRM, KGRN, id, KNRM, KGRN, mem, KNRM, KGRN, dev, KNRM, KGRN, run, KNRM, KGRN, pri, KNRM);
+			// Check if its a valid job
+			if (mem>M){
+				if (debug)
+					printf("%sError%s, job %s%d%s requires to much memory: have %s%d%s, %s%d%s requested\n",KRED,KNRM,KGRN,id,KNRM,KGRN,M,KNRM,KRED,mem,KNRM);
+				continue;
+			}
+			if (dev>S){
+				if (debug)
+					printf("%sError%s, job %s%d%s requires to many devices: have %s%d%s, %s%d%s requested\n",KRED,KNRM,KGRN,id,KNRM,KGRN,S,KNRM,KRED,dev,KNRM);
+				continue;
+			
+			}
 		}
 		// Handle request for devices
-		if (!strncmp("Q", buff, 1))
+		if (!strncmp("Q", buff, cmpSize))
 		{
 			if (debug)
 				printf("Device request has arrived\n");
@@ -210,16 +223,16 @@ int main(int argc, char *argv[])
 				token = strtok(tokens[i], "=");
 				while (token)
 				{
-					if (!strncmp(token, "J\0", 2))
+					if (!strncmp(token, "J\0", cmpSize))
 					{
 						id = atoi(strtok(NULL, "="));
 					}
 					
-					else if (!strncmp(token, "D\0", 2))
+					else if (!strncmp(token, "D\0", cmpSize))
 					{
 						dev = atoi(strtok(NULL, "="));
 					}
-					else if (!strncmp(token, "Q\0", 2))
+					else if (!strncmp(token, "Q\0", cmpSize))
 					{
 						aT = atoi(tokens[++i]);
 					}
@@ -230,7 +243,7 @@ int main(int argc, char *argv[])
 				printf("Arrival Time: %s%d%s | Job ID: %s%d%s | Devices requested: %s%d%s\n", KGRN, aT, KNRM, KGRN, id, KNRM, KGRN, dev, KNRM);
 		}
 		// Handle release for devices
-		if (!strncmp("L", buff, 1))
+		if (!strncmp("L", buff, cmpSize))
 		{
 			if (debug)
 				printf("Device release has arrived\n");
@@ -251,16 +264,16 @@ int main(int argc, char *argv[])
 				token = strtok(tokens[i], "=");
 				while (token)
 				{
-					if (!strncmp(token, "J\0", 2))
+					if (!strncmp(token, "J\0", cmpSize))
 					{
 						id = atoi(strtok(NULL, "="));
 					}
 					
-					else if (!strncmp(token, "D\0", 2))
+					else if (!strncmp(token, "D\0", cmpSize))
 					{
 						dev = atoi(strtok(NULL, "="));
 					}
-					else if (!strncmp(token, "L\0", 2))
+					else if (!strncmp(token, "L\0", cmpSize))
 					{
 						aT = atoi(tokens[++i]);
 					}
@@ -269,29 +282,29 @@ int main(int argc, char *argv[])
 			}
 			if (debug)
 				printf("Arrival Time: %s%d%s | Job ID: %s%d%s | Devices requested: %s%d%s\n", KGRN, aT, KNRM, KGRN, id, KNRM, KGRN, dev, KNRM);
-		}
-		
+		}		
 		// Handle display
-		if (!strncmp("D", buff, 1))
+		if (!strncmp("D", buff, cmpSize))
 		{
 			if (debug)
 				printf("Display has arrived\n");
-			int aT;
+			int aT = NULL;
 			char *tokens[displaysize];
 			char *token = strtok(buff, " ");
 			int idx = 0;
 			while (token)
 			{
-				tokens[idx] = malloc(sizeof(char) * strlen(token));
+				tokens[idx] = (char*)malloc(sizeof(char) * strlen(token));
 				strncpy(tokens[idx++], token, strlen(token));
 				token = strtok(NULL, " ");
 			}
 			for (int i = 0; i < displaysize; i++)
 			{
+				
 				token = strtok(tokens[i], "=");
 				while (token)
 				{
-					if (!strncmp(token, "D\0", 2))
+					if (!strncmp(token, "D\0", cmpSize))
 					{
 						aT = atoi(tokens[++i]);
 					}
@@ -300,6 +313,24 @@ int main(int argc, char *argv[])
 			}
 			if (debug)
 				printf("Arrival Time: %s%d%s\n", KGRN, aT, KNRM);
+			FILE *out;
+			char * name = malloc(sizeof(char)*(strlen(filename)-3));
+			char * outName = malloc(sizeof(char)*(strlen(name)+4));
+			strncpy(name,filename,strlen(filename)-3);
+			name[strlen(name)-1] = '\0';
+			snprintf(outName,strlen(name)+15,"%s_D%d.json",name,aT);
+			out = fopen(outName,"w");
+			fprintf(out,"{\n");
+			fprintf(out,"\t\"current_time\":%d,\n",T);
+			fprintf(out,"\t\"total_memory\":%d,\n",M);
+			fprintf(out,"\t\"available_memory\":%d,\n",M-M);
+			fprintf(out,"\t\"total_devices\":%d,\n",S);
+			fprintf(out,"\t\"available_devices\":%d,\n",S-S);
+			fprintf(out,"\t\"quantum\":%d\n",Q);
+			fprintf(out,"}\0");
+			fclose(out);
+			free(outName);
+			free(name);
 		}
 		
 	}
@@ -310,7 +341,7 @@ void clearBuff(char buff[255])
 {
 	for (int i = 0; i < 255; i++)
 	{
-		buff[i] = NULL;
+		buff[i] = '\0';
 	}
 }
 int readLine(FILE *fp, char buff[255])

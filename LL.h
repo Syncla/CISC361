@@ -22,13 +22,17 @@ struct node
 
 struct LL
 {
+    int size;
     struct node *head;
     struct node *tail;
 };
 
 // FUNCTION DECLARATIONS
 struct LL *pushSJF(struct LL *, const int, const int, const int, const int, const int, const int); //ADDS NODE TO THE LIST
+struct LL *pushNodeSJF(struct LL *, struct node *); //ADDS NODE TO THE LIST
+
 struct LL *pushFIFO(struct LL *, const int, const int, const int, const int, const int, const int);
+struct LL *pushNodeFIFO(struct LL *, struct node *);
 
 struct LL *pop(struct LL *); //REMOVES FIRST IN FROM THE LIST
 

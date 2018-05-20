@@ -123,6 +123,7 @@ struct LL *pushSJF(struct LL *l, const int id, const int at, const int mm, const
 		}
 	} //ELSE
 	  //printLL(l);
+	l->size++;
 	return l;
 
 } //PUSHSJF
@@ -173,7 +174,7 @@ struct LL *pushFIFO(struct LL *l, const int id, const int at, const int mm, cons
 		l->tail->next = n;
 		l->tail = n;
 	} //ELSE
-
+	l->size++;
 	return l;
 
 } //PUSHFIFO
@@ -182,7 +183,7 @@ struct LL *pop(struct LL *l)
 {
 	struct node *h = NULL;
 	struct node *n = NULL;
-
+	
 	if (NULL == l)
 	{
 		printf("List is empty\n");
@@ -208,7 +209,7 @@ struct LL *pop(struct LL *l)
 	l->head = n;
 	if (NULL == l->head)
 		l->tail = l->head; /* The element tail was pointing to is free(), so we need an update */
-
+	l->size--;
 	return l;
 } //POP
 
@@ -225,14 +226,14 @@ struct LL *list_free(struct LL *l)
 struct LL *list_new(void)
 {
 	struct LL *l = malloc(1 * sizeof(*l));
-
+	
 	if (NULL == l)
 	{
 		fprintf(stderr, "LINE: %d, malloc() failed\n", __LINE__);
 	} //IF
 
 	l->head = l->tail = NULL;
-
+	l->size=0;
 	return l;
 } //LIST_NEW
 

@@ -55,11 +55,17 @@ int main(int argc, char *argv[])
 	int S = 0;			 // Number of devices
 	int Q = 0;			 // Size of time quantum
 	int T = 0;			 // Start time
+
+	int devLeft = 0;
+	int memLeft = 0;
 	char buff[buffSize]; // Buffer to read lines into
+	struct node * running;
 
-	struct LL *hQ1 = list_new(); // SJF Linked List
-	struct LL *hQ2 = list_new(); // FIFO Linked List
-
+	struct LL *hQ1 = list_new(); // SJF Hold queue
+	struct LL *hQ2 = list_new(); // FIFO Hold queue
+	struct LL *complete = list_new();	// List of complete tasks
+	struct LL *ready = list_new();	// Ready queue
+	struct LL *wait = list_new();
 	FILE *inp; // File handle
 	char *filename = argv[1];
 	// Check if verbose output is on
@@ -118,10 +124,12 @@ int main(int argc, char *argv[])
 				if (!strncmp(token, "M\0", 2))
 				{
 					M = atoi(strtok(NULL, "="));
+					memLeft = M;
 				}
 				else if (!strncmp(token, "S\0", 2))
 				{
 					S = atoi(strtok(NULL, "="));
+					devLeft = S;
 				}
 				else if (!strncmp(token, "Q\0", 2))
 				{
@@ -216,6 +224,7 @@ int main(int argc, char *argv[])
 			{
 				pushFIFO(hQ2, id, aT, mem, dev, run, pri);
 			}
+			T = aT;
 		}
 		// Handle request for devices
 		if (!strncmp("Q", buff, cmpSize))
@@ -257,6 +266,12 @@ int main(int argc, char *argv[])
 			}
 			if (debug)
 				printf("Arrival Time: %s%d%s | Job ID: %s%d%s | Devices requested: %s%d%s\n", KGRN, aT, KNRM, KGRN, id, KNRM, KGRN, dev, KNRM);
+			T = aT;
+			if (id ==running->jobID){
+				if (dev > devLeft){
+					
+				}
+			}
 		}
 		// Handle release for devices
 		if (!strncmp("L", buff, cmpSize))
@@ -298,6 +313,7 @@ int main(int argc, char *argv[])
 			}
 			if (debug)
 				printf("Arrival Time: %s%d%s | Job ID: %s%d%s | Devices requested: %s%d%s\n", KGRN, aT, KNRM, KGRN, id, KNRM, KGRN, dev, KNRM);
+			T = aT;
 		}
 		// Handle display
 		if (!strncmp("D", buff, cmpSize))
@@ -347,6 +363,7 @@ int main(int argc, char *argv[])
 			fclose(out);
 			free(outName);
 			free(name);
+			T = aT;
 		}
 	}
 	

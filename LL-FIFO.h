@@ -31,25 +31,6 @@ struct LL* list_free(struct LL*);				//
 void printLL (const struct LL*);				//PRINTS ENTIRE LINKED LIST
 void printNode(const struct node*);				//PRINTS A NODE
 
-int main(void){
-	struct LL* myList = NULL;
-
-myList = list_new();
-push(myList,1,1,1,1,1,1);
-push(myList,2,2,2,2,2,1);
-push(myList,3,3,3,3,3,1);
-push(myList,4,4,4,4,4,1);
-
-printLL(myList);
-
-pop(myList);
-
-printLL(myList);
-
-return 0;
-}//main
-
-
 //FUNCTIONS DEFINITIONS
 struct LL* push(struct LL* l, const int id, const int at, const int mm, const int ser,const int rt,  const int pri){
 	struct node* n = malloc(1* sizeof(*n));

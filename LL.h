@@ -43,4 +43,11 @@ void cpyNode(struct node *, struct node *);
 
 void printLL(const struct LL *);     //PRINTS ENTIRE LINKED LIST
 void printNode(const struct node *); //PRINTS A NODE
+
+int getAssignedMemory(struct LL *);
+
+int getAssignedDevices(struct LL *);
+
+
+
 #endif

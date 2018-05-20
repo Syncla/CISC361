@@ -357,13 +357,11 @@ void printLL(const struct LL *l)
 {
 	struct node *n = NULL;
 
-	if (l)
-	{
-		for (n = l->head; n; n = n->next)
-		{
+	if (l){
+		for (n = l->head; n; n = n->next){
 			printNode(n);
 		} //FOR
-	}	 //IF
+	}//IF
 
 	printf("------------------\n");
 } //PRINTLL
@@ -379,3 +377,30 @@ void printNode(const struct node *n)
 		printf("Can not print NULL struct \n");
 	} //ELSE
 } //PRINTNODE
+
+int getAssignedDevices(struct LL *l){
+    int ad = 0;
+    
+    if(l){
+        for (n=l->head;n;n->next){
+            ad += n->devicesAssigned;
+        }//for
+    }//IF
+    
+    return ad;
+    
+}//GETASSIGNEDDEVICES
+
+int getAssignedMemory(struct LL *l){
+    int am = 0;
+    
+    if(l){
+        for (n=l->head;n;n->next){
+            am += n->mainMemory;
+        }//for
+    }//IF
+    
+    return am;
+    
+    
+}// GETASSIGNEDMEMORY

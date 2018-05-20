@@ -8,6 +8,7 @@ struct node{
     int arrivalTime;
     int mainMemory;
     int serial;
+    int runTime;
     int priority;
     struct node *next;
     struct node *prev;
@@ -21,7 +22,7 @@ struct LL{
 
 
 // FUNCTION DECLARATIONS
-struct LL* push( struct LL*,const int,const int,const int,const int,const int);			//ADDS NODE TO THE LIST
+struct LL* push( struct LL*,const int,const int,const int,const int,const int, const int);			//ADDS NODE TO THE LIST
 struct LL* pop(struct LL* );					//REMOVES FIRST IN FROM THE LIST
 
 struct LL* list_new(void);						//CREATES NEW LINKED LIST
@@ -34,13 +35,13 @@ int main(void){
 	struct LL* myList = NULL;
 
 myList = list_new();
-push(myList,1,1,4,1,1);
-push(myList,2,1,4,1,1);
-push(myList,3,1,4,1,1);
-push(myList,4,1,2,1,1);
-push(myList,5,1,3,1,1);
-push(myList,6,1,6,1,1);
-push(myList,7,1,1,1,1);
+push(myList,1,1,4,1,1,1);
+push(myList,2,1,4,1,1,1);
+push(myList,3,1,4,1,1,1);
+push(myList,4,1,2,1,1,1);
+push(myList,5,1,3,1,1,1);
+push(myList,6,1,6,1,1,1);
+push(myList,7,1,1,1,1,1);
 
 printLL(myList);
 
@@ -53,7 +54,7 @@ return 0;
 
 
 //FUNCTIONS DEFINITIONS
-struct LL* push(struct LL* l, const int id,const int at,const int mm,const int ser, const int pri){
+struct LL* push(struct LL* l, const int id,const int at,const int mm,const int ser, const int rt, const int pri){
 	struct node* n = malloc(1* sizeof(*n));
 
 	if( n == NULL ){
@@ -65,6 +66,7 @@ struct LL* push(struct LL* l, const int id,const int at,const int mm,const int s
     n->arrivalTime = at;
     n->mainMemory = mm;
     n->serial = ser;
+    n->runTime = rt;
     n->priority = pri;
     
 	n->next = NULL;
@@ -76,7 +78,8 @@ struct LL* push(struct LL* l, const int id,const int at,const int mm,const int s
   		return l;
 	}//IF
 	
-	else if( NULL == l->head && NULL == l->tail ){			/* printf("Empty list, adding p->num: %d\n\n", p->num);  */
+	else if( NULL == l->head && NULL == l->tail ){			
+        printf("Empty list, adding first node:%d\n",n->jobID);
   		l->head = l->tail = n;
   		return l;
 	}//ELSE IF
@@ -87,7 +90,8 @@ struct LL* push(struct LL* l, const int id,const int at,const int mm,const int s
   		return NULL;
 	}//ELSE IF
 	
-	else{												
+	else{
+        printf("adding node:%d\n",n->jobID);
         if (n->mainMemory <= l->head->mainMemory){
             n->next = l->head;
             l->head->prev = n;
@@ -102,17 +106,16 @@ struct LL* push(struct LL* l, const int id,const int at,const int mm,const int s
             }//while
             
             if(currNode == l->tail){
-                n->prev = currNode->prev;
+                n->prev = currNode->prev->next;
                 n->prev->next = n;
                 l->tail = n;
                 n->next = NULL;
             }
             
             else{
-                n->next = currNode->next;
+                n->next = currNode->prev->next;
                 n->prev = currNode->prev;
-                n->next->prev = n;
-                n->prev->next = n;
+                currNode->prev->next = n;
 
 
                 printf("n: ");
@@ -120,14 +123,10 @@ struct LL* push(struct LL* l, const int id,const int at,const int mm,const int s
                 printf("curr: ");
                 printNode(currNode);
 
-                //printf("\ncurrNode prev, currNode next = %d",currNode->next->jobID);
-                //currNode->prev->next = n;
-                //n->next->prev = n;
-
             }//ELSE
         }
 	}//ELSE
-
+    printLL(l);
 	return l;
 
 }//PUSH

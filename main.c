@@ -7,6 +7,9 @@
 #include <unistd.h>
 #include <pthread.h>
 
+// Custom includes
+#include "LL.h"
+
 // COLOR DEFINITIONS
 #define KNRM "\x1B[0m"
 #define KRED "\x1B[31m"
@@ -53,6 +56,10 @@ int main(int argc, char *argv[])
 	int Q = 0;			 // Size of time quantum
 	int T = 0;			 // Start time
 	char buff[buffSize]; // Buffer to read lines into
+	
+	struct LL* hQ1 = list_new();	// SJF Linked List
+    struct LL* hQ2 = list_new();	// FIFO Linked List
+
 	FILE *inp;			 // File handle
 	char *filename = argv[1];
 	// Check if verbose output is on
@@ -200,6 +207,12 @@ int main(int argc, char *argv[])
 				continue;
 			
 			}
+			if (pri==1){
+				pushSJF(hQ1,id,aT,mem,dev,run,pri);
+			}
+			else{
+				pushFIFO(hQ2,id,aT,mem,dev,run,pri);
+			}
 		}
 		// Handle request for devices
 		if (!strncmp("Q", buff, cmpSize))
@@ -334,6 +347,11 @@ int main(int argc, char *argv[])
 		}
 		
 	}
+	printf("\n\nHold queue 1:\n");
+	printLL(hQ1);
+	
+	printf("Hold queue 2:\n");
+	printLL(hQ2);
 	fclose(inp);
 	return EXIT;
 }

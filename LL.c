@@ -2,7 +2,7 @@
 #include  <stdlib.h>
 #include  <string.h>
 #include  "LL.h"
-
+/*
 int main(void){
 	struct LL* myListFIFO = NULL;
     struct LL* myListSJF = NULL;
@@ -37,7 +37,7 @@ pop(myListSJF);
 printLL(myListSJF);
 return 0;
 }//main
-
+*/
 
 //FUNCTIONS DEFINITIONS
 struct LL* pushSJF(struct LL* l, const int id,const int at,const int mm,const int ser, const int rt, const int pri){
@@ -54,7 +54,7 @@ struct LL* pushSJF(struct LL* l, const int id,const int at,const int mm,const in
     n->serial = ser;
     n->runTime = rt;
     n->priority = pri;
-    
+    n->devicesAssigned = 0;
 	n->next = NULL;
 
 
@@ -132,6 +132,7 @@ struct LL* pushFIFO(struct LL* l, const int id, const int at, const int mm, cons
     n->serial = ser;
     n->runTime = rt;
     n->priority = pri;
+	n->devicesAssigned = 0;
 	n->next = NULL;
     n->prev = NULL;
 

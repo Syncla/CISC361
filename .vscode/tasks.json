@@ -12,7 +12,8 @@
                 "-Wall",
                 "-o",
                 "tmp.exe",
-                "main.c"
+                "main.c",
+                "LL.c"
             ],
             "group": "build",
             "presentation": {

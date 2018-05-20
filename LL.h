@@ -22,6 +22,7 @@ struct node
 
 struct LL
 {
+    int size;
     struct node *head;
     struct node *tail;
 };

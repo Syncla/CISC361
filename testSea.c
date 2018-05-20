@@ -5,8 +5,14 @@
 //STRUCT DEFINITIONS
 struct node
 {
-	int num;
-	struct node* next;
+	int jobID;
+    int arrivalTime;
+    int mainMemory;
+    int serial;
+    int priority;
+    struct node *next;
+    struct node *prev;
+    
 };//node struct
 
 struct LL
@@ -54,7 +60,7 @@ struct LL* push(struct LL* l, const int i){
 	  	return l; 
 	}//IF
 
-	n->num = i;
+	n->jobID = i;
 	n->next = NULL;
 
 
@@ -150,7 +156,7 @@ void printLL( const struct LL* l ){
  
 void printNode(const struct node* n ){
   	if( n ) {
-    	printf("Num = %d\n", n->num);
+    	printf("JobID = %d\n", n->jobID);
     }//IF
   	else{
       	printf("Can not print NULL struct \n");

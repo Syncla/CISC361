@@ -21,7 +21,7 @@ struct LL{
 
 
 // FUNCTION DECLARATIONS
-struct LL* push( struct LL*,const int);			//ADDS NODE TO THE LIST
+struct LL* push( struct LL*,const int,const int, const int, const int, const int);			//ADDS NODE TO THE LIST
 struct LL* pop(struct LL* );					//REMOVES FIRST IN FROM THE LIST
 
 struct LL* list_new(void);						//CREATES NEW LINKED LIST
@@ -34,10 +34,10 @@ int main(void){
 	struct LL* myList = NULL;
 
 myList = list_new();
-push(myList,1);
-push(myList,2);
-push(myList,3);
-push(myList,4);
+push(myList,1,1,1,1,1);
+push(myList,2,2,2,2,2);
+push(myList,3,3,3,3,3);
+push(myList,4,4,4,4,4);
 
 printLL(myList);
 
@@ -50,7 +50,7 @@ return 0;
 
 
 //FUNCTIONS DEFINITIONS
-struct LL* push(struct LL* l, const int i){
+struct LL* push(struct LL* l, const int id, const int at, const int mm, const int ser, const int pri){
 	struct node* n = malloc(1* sizeof(*n));
 
 	if( n == NULL ){
@@ -58,8 +58,13 @@ struct LL* push(struct LL* l, const int i){
 	  	return l; 
 	}//IF
 
-	n->jobID = i;
+	n->jobID = id;
+    n->arrivalTime = at;
+    n->mainMemory = mm;
+    n->serial = ser;
+    n->priority = pri;
 	n->next = NULL;
+    n->prev = NULL;
 
 
 	if( l == NULL){
@@ -154,7 +159,7 @@ void printLL( const struct LL* l ){
  
 void printNode(const struct node* n ){
   	if( n ) {
-    	printf("JobID = %d\n", n->jobID);
+    	printf("Arr = %d Job = %d Mem = %d Ser = %d P = %d\n", n->arrivalTime, n->jobID, n->mainMemory, n->serial, n->priority);
     }//IF
   	else{
       	printf("Can not print NULL struct \n");

@@ -268,9 +268,18 @@ int main(int argc, char *argv[])
 				printf("Arrival Time: %s%d%s | Job ID: %s%d%s | Devices requested: %s%d%s\n", KGRN, aT, KNRM, KGRN, id, KNRM, KGRN, dev, KNRM);
 			T = aT;
 			if (id ==running->jobID){
-				if (dev > devLeft){
-					printf("Not enough devices\n");
+				if (dev > devLeft && dev + running->devicesAssigned < running->serial){
+					printf("Not enough devices or to many assigned\n");
+					pushNodeFIFO(wait,running);
+					if (ready->head !=NULL)
+					{
+						struct node * newRunning;
+						cpyNode(newRunning,ready->head);
+						pop(ready);
+						running = newRunning;
+					}
 				}
+
 			}
 		}
 		// Handle release for devices

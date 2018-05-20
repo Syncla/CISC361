@@ -39,7 +39,7 @@ struct LL *pop(struct LL *); //REMOVES FIRST IN FROM THE LIST
 struct LL *list_new(void);         //CREATES NEW LINKED LIST
 struct LL *list_free(struct LL *); //
 
-void cpyNode(struct node *, struct node *);
+void cpyNode(struct node * __dst__, struct node * __src__);
 
 void printLL(const struct LL *);     //PRINTS ENTIRE LINKED LIST
 void printNode(const struct node *); //PRINTS A NODE

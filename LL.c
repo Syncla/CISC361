@@ -380,9 +380,8 @@ void printNode(const struct node *n)
 
 int getAssignedDevices(struct LL *l){
     int ad = 0;
-    
     if(l){
-        for (n=l->head;n;n->next){
+        for (struct node * n=l->head;n;n->next){
             ad += n->devicesAssigned;
         }//for
     }//IF
@@ -395,7 +394,7 @@ int getAssignedMemory(struct LL *l){
     int am = 0;
     
     if(l){
-        for (n=l->head;n;n->next){
+        for (struct node *n=l->head;n;n->next){
             am += n->mainMemory;
         }//for
     }//IF

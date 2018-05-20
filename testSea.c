@@ -3,8 +3,7 @@
 #include  <string.h>
 
 //STRUCT DEFINITIONS
-struct node
-{
+struct node{
 	int jobID;
     int arrivalTime;
     int mainMemory;
@@ -15,8 +14,7 @@ struct node
     
 };//node struct
 
-struct LL
-{
+struct LL{
 	struct node* head;
 	struct node* tail;
 };

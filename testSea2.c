@@ -3,21 +3,25 @@
 #include  <string.h>
 
 //STRUCT DEFINITIONS
-struct node
-{
-	int num;
-	struct node* next;
+struct node{
+	int jobID;
+    int arrivalTime;
+    int mainMemory;
+    int serial;
+    int priority;
+    struct node *next;
+    struct node *prev;
+    
 };//node struct
 
-struct LL
-{
+struct LL{
 	struct node* head;
 	struct node* tail;
 };
 
 
 // FUNCTION DECLARATIONS
-struct LL* push( struct LL*,const int);			//ADDS NODE TO THE LIST
+struct LL* push( struct LL*,const int,const int,const int,const int,const int);			//ADDS NODE TO THE LIST
 struct LL* pop(struct LL* );					//REMOVES FIRST IN FROM THE LIST
 
 struct LL* list_new(void);						//CREATES NEW LINKED LIST
@@ -30,10 +34,13 @@ int main(void){
 	struct LL* myList = NULL;
 
 myList = list_new();
-push(myList,1);
-push(myList,2);
-push(myList,3);
-push(myList,4);
+push(myList,1,1,4,1,1);
+push(myList,2,1,4,1,1);
+push(myList,3,1,4,1,1);
+push(myList,4,1,2,1,1);
+push(myList,5,1,3,1,1);
+push(myList,6,1,6,1,1);
+push(myList,7,1,1,1,1);
 
 printLL(myList);
 
@@ -46,7 +53,7 @@ return 0;
 
 
 //FUNCTIONS DEFINITIONS
-struct LL* push(struct LL* l, const int i){
+struct LL* push(struct LL* l, const int id,const int at,const int mm,const int ser, const int pri){
 	struct node* n = malloc(1* sizeof(*n));
 
 	if( n == NULL ){
@@ -54,7 +61,12 @@ struct LL* push(struct LL* l, const int i){
 	  	return l; 
 	}//IF
 
-	n->num = i;
+	n->jobID = id;
+    n->arrivalTime = at;
+    n->mainMemory = mm;
+    n->serial = ser;
+    n->priority = pri;
+    
 	n->next = NULL;
 
 
@@ -75,9 +87,45 @@ struct LL* push(struct LL* l, const int i){
   		return NULL;
 	}//ELSE IF
 	
-	else{													/* printf("List not empty, adding element to tail\n"); */
-  		l->tail->next = n;
-  		l->tail = n;
+	else{												
+        if (n->mainMemory <= l->head->mainMemory){
+            n->next = l->head;
+            l->head->prev = n;
+            l->head = n;
+        }//if 
+        else{
+            struct node* currNode;
+            currNode = l->head; 
+            printf("currNode created for J=%d\n",n->jobID);
+            while(currNode->next != NULL && currNode->mainMemory < n->mainMemory){
+                currNode = currNode->next;
+            }//while
+            
+            if(currNode == l->tail){
+                n->prev = currNode->prev;
+                n->prev->next = n;
+                l->tail = n;
+                n->next = NULL;
+            }
+            
+            else{
+                n->next = currNode->next;
+                n->prev = currNode->prev;
+                n->next->prev = n;
+                n->prev->next = n;
+
+
+                printf("n: ");
+                printNode(n);
+                printf("curr: ");
+                printNode(currNode);
+
+                //printf("\ncurrNode prev, currNode next = %d",currNode->next->jobID);
+                //currNode->prev->next = n;
+                //n->next->prev = n;
+
+            }//ELSE
+        }
 	}//ELSE
 
 	return l;
@@ -150,7 +198,7 @@ void printLL( const struct LL* l ){
  
 void printNode(const struct node* n ){
   	if( n ) {
-    	printf("Num = %d\n", n->num);
+    	printf("J = %d M = %d\n", n->jobID,n->mainMemory);
     }//IF
   	else{
       	printf("Can not print NULL struct \n");

@@ -269,7 +269,7 @@ int main(int argc, char *argv[])
 			T = aT;
 			if (id ==running->jobID){
 				if (dev > devLeft){
-					
+					printf("Not enough devices\n");
 				}
 			}
 		}

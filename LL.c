@@ -402,5 +402,4 @@ int getAssignedMemory(struct LL *l){
     
     return am;
     
-    
 }// GETASSIGNEDMEMORY

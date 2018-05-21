@@ -131,72 +131,7 @@ struct LL *pushSJF(struct LL *l, const int id, const int at, const int mm, const
 
 struct LL *pushNodeSJF(struct LL *l, struct node *n){
     
-	if (l == NULL)
-	{
-		printf("Queue not initialized\n");
-		free(n);
-		return l;
-	} //IF
-
-	else if (NULL == l->head && NULL == l->tail)
-	{
-		//printf("Empty list, adding first node:%d\n",n->jobID);
-		l->head = l->tail = n;
-		return l;
-	} //ELSE IF
-
-	else if (NULL == l->head || NULL == l->tail)
-	{
-		fprintf(stderr, "There is something seriously wrong with your assignment of head/tail to the list\n");
-		free(n);
-		return NULL;
-	} //ELSE IF
-
-	else
-	{
-		//printf("adding node:%d\n",n->jobID);
-		if (n->mainMemory <= l->head->mainMemory)
-		{
-			n->next = l->head;
-			l->head->prev = n;
-			l->head = n;
-		} //if
-		else
-		{
-			struct node *currNode;
-			currNode = l->head;
-			//printf("currNode created for J=%d\n",n->jobID);
-			while (currNode->next != NULL && currNode->mainMemory < n->mainMemory)
-			{
-				currNode = currNode->next;
-			} //while
-
-			if (currNode == l->tail)
-			{
-				n->prev = currNode->prev->next;
-				n->prev->next = n;
-				l->tail = n;
-				n->next = NULL;
-			}
-
-			else
-			{
-				n->next = currNode->prev->next;
-				n->prev = currNode->prev;
-				currNode->prev->next = n;
-
-				/*
-                printf("n: ");
-                printNode(n);
-                printf("curr: ");
-                printNode(currNode);
-                */
-			} //ELSE
-		}
-	} //ELSE
-	  //printLL(l);
-	l->size++;
-	return l;
+	return pushSJF(l,n->jobID,n->arrivalTime,n->mainMemory,n->serial,n->runTime,n->priority);
     
 } //ADDS NODE TO THE LIST
 
@@ -252,32 +187,7 @@ struct LL *pushFIFO(struct LL *l, const int id, const int at, const int mm, cons
 } //PUSHFIFO
 
 struct LL *pushNodeFIFO(struct LL *l, struct node *n){
-    if (l == NULL){
-		printf("Queue not initialized\n");
-		free(n);
-		return l;
-	} //IF
-
-	else if (NULL == l->head && NULL == l->tail){ 
-        /* printf("Empty list, adding p->num: %d\n\n", p->num);  */
-		l->head = l->tail = n;
-		return l;
-	} //ELSE IF
-
-	else if (NULL == l->head || NULL == l->tail){
-		fprintf(stderr, "There is something seriously wrong with your assignment of head/tail to the list\n");
-		free(n);
-		return NULL;
-	} //ELSE IF
-    
-    else{ 
-        /* printf("List not empty, adding element to tail\n"); */
-		l->tail->next = n;
-		l->tail = n;
-	} //ELSE
-	
-    l->size++;
-	return l;
+    return pushFIFO(l,n->jobID,n->arrivalTime,n->mainMemory,n->serial,n->runTime,n->priority);
 }//pushNodeFIFO
 
 
@@ -380,9 +290,8 @@ void printNode(const struct node *n)
 
 int getAssignedDevices(struct LL *l){
     int ad = 0;
-    
     if(l){
-        for (n=l->head;n;n->next){
+        for (struct node * n=l->head;n;n->next){
             ad += n->devicesAssigned;
         }//for
     }//IF
@@ -395,7 +304,7 @@ int getAssignedMemory(struct LL *l){
     int am = 0;
     
     if(l){
-        for (n=l->head;n;n->next){
+        for (struct node *n=l->head;n;n->next){
             am += n->mainMemory;
         }//for
     }//IF

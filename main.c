@@ -44,30 +44,47 @@
 int debug = 0;
 
 // Function declarations
-const char *getFilenameExt(const char *filename);
+
 int readLine(FILE *fp, char buff[255]);
 void clearBuff(char buff[255]);
 
 // Main
 int main(int argc, char *argv[])
 {
-	int M = 0;			 // Amount of main memory available
-	int S = 0;			 // Number of devices
-	int Q = 0;			 // Size of time quantum
-	int T = 0;			 // Start time
+	// Constant value declerations
+	int M = 0; // Amount of main memory available
+	int S = 0; // Number of devices
+	int Q = 0; // Size of time quantum
+	int T = 0; // Start time
 
-	int devLeft = 0;
-	int memLeft = 0;
-	char buff[buffSize]; // Buffer to read lines into
-	struct node * running;
+	// Variable value declerations
+	int interrupt = 0; // Time quantum interrupt
+	int devLeft = 0;   // How many devices are left
+	int memLeft = 0;   // How much memory is left
 
-	struct LL *hQ1 = list_new(); // SJF Hold queue
-	struct LL *hQ2 = list_new(); // FIFO Hold queue
-	struct LL *complete = list_new();	// List of complete tasks
+	int operation = 0; // What is going on
+	// 0 : nothing, increment to next time slice
+	// 1 : new job
+	// 2 : request for device
+	// 3 : release device
+	// 4 : printout
+
+	// Buffer to read lines into
+	char buff[buffSize];
+	// Current running node
+	struct node *running = NULL;
+
+	// Queues
+	struct LL *hQ1 = list_new();	  // SJF Hold queue
+	struct LL *hQ2 = list_new();	  // FIFO Hold queue
+	struct LL *complete = list_new(); // List of complete tasks
 	struct LL *ready = list_new();	// Ready queue
 	struct LL *wait = list_new();
-	FILE *inp; // File handle
-	char *filename = argv[1];
+
+	// File stuff
+	FILE *inp;				  // File handle
+	char *filename = argv[1]; // Filename
+
 	// Check if verbose output is on
 	if (argc == 3)
 	{
@@ -76,8 +93,10 @@ int main(int argc, char *argv[])
 			debug = 1;
 		}
 	}
+
 	if (debug)
 		printf("Opening file: %s\n", filename);
+
 	inp = fopen(filename, "r");
 	// Check for valid file name
 	if (inp == NULL)
@@ -86,13 +105,6 @@ int main(int argc, char *argv[])
 		return INVALIDFILENAME;
 	}
 
-	// Check for valid extension
-	const char *ext = getFilenameExt(filename);
-	if (strcmp(ext, "txt"))
-	{
-		printf("%sInvalid file extension %s%s\n", KRED, ext, KNRM);
-		return INVALIDEXT;
-	}
 	// Get configuration
 	if (debug)
 		printf("Getting configuration\n");
@@ -104,6 +116,7 @@ int main(int argc, char *argv[])
 	}
 	else
 	{
+		printf("%s\n", buff);
 		if (debug)
 			printf("Configuration is: %s\n", buff); // What was read from the file
 		// Split configuration based on spaces
@@ -147,19 +160,22 @@ int main(int argc, char *argv[])
 			printf("Start Time:%s%d%s | M=%s%d%s | S=%s%d%s | Q=%s%d%s\n", KGRN, T, KNRM, KGRN, M, KNRM, KGRN, S, KNRM, KGRN, Q, KNRM);
 	}
 	// Read file
-	while (readLine(inp, buff))
+
+	while (readLine(inp, buff) || running)
 	{
-		// Handle job arrival
+		int aT = DEF;
+		int id = DEF;
+		int pri = DEF;
+		int mem = DEF;
+		int dev = DEF;
+		int run = DEF;
+		interrupt = 0;
+		// Handle job arrival (Quantum is not interrupted)
 		if (!strncmp("A", buff, cmpSize))
 		{
 			if (debug)
 				printf("New job has arrived\n");
-			int aT = DEF;
-			int id = DEF;
-			int pri = DEF;
-			int mem = DEF;
-			int dev = DEF;
-			int run = DEF;
+
 			char *tokens[jobsize];
 			char *token = strtok(buff, " ");
 			int idx = 0;
@@ -203,37 +219,13 @@ int main(int argc, char *argv[])
 			}
 			if (debug)
 				printf("Arrival Time: %s%d%s | Job ID: %s%d%s | Memory usage: %s%d%s | Device usage: %s%d%s | Run time: %s%d%s | Priority: %s%d%s\n", KGRN, aT, KNRM, KGRN, id, KNRM, KGRN, mem, KNRM, KGRN, dev, KNRM, KGRN, run, KNRM, KGRN, pri, KNRM);
-			// Check if its a valid job
-			if (mem > M)
-			{
-				if (debug)
-					printf("%sError%s, job %s%d%s requires to much memory: have %s%d%s, %s%d%s requested\n", KRED, KNRM, KGRN, id, KNRM, KGRN, M, KNRM, KRED, mem, KNRM);
-				continue;
-			}
-			if (dev > S)
-			{
-				if (debug)
-					printf("%sError%s, job %s%d%s requires to many devices: have %s%d%s, %s%d%s requested\n", KRED, KNRM, KGRN, id, KNRM, KGRN, S, KNRM, KRED, dev, KNRM);
-				continue;
-			}
-			if (pri == 1)
-			{
-				pushSJF(hQ1, id, aT, mem, dev, run, pri);
-			}
-			else
-			{
-				pushFIFO(hQ2, id, aT, mem, dev, run, pri);
-			}
-			T = aT;
+			operation = 1;
 		}
-		// Handle request for devices
+		// Handle request for devices (Interrupt quantum)
 		if (!strncmp("Q", buff, cmpSize))
 		{
 			if (debug)
 				printf("Device request has arrived\n");
-			int aT;
-			int id;
-			int dev;
 			char *tokens[requestsize];
 			char *token = strtok(buff, " ");
 			int idx = 0;
@@ -266,21 +258,15 @@ int main(int argc, char *argv[])
 			}
 			if (debug)
 				printf("Arrival Time: %s%d%s | Job ID: %s%d%s | Devices requested: %s%d%s\n", KGRN, aT, KNRM, KGRN, id, KNRM, KGRN, dev, KNRM);
-			T = aT;
-			if (id ==running->jobID){
-				if (dev > devLeft){
-					printf("Not enough devices\n");
-				}
-			}
+
+			interrupt = 1;
+			operation = 2;
 		}
 		// Handle release for devices
 		if (!strncmp("L", buff, cmpSize))
 		{
 			if (debug)
 				printf("Device release has arrived\n");
-			int aT;
-			int id;
-			int dev;
 			char *tokens[releasesize];
 			char *token = strtok(buff, " ");
 			int idx = 0;
@@ -313,14 +299,14 @@ int main(int argc, char *argv[])
 			}
 			if (debug)
 				printf("Arrival Time: %s%d%s | Job ID: %s%d%s | Devices requested: %s%d%s\n", KGRN, aT, KNRM, KGRN, id, KNRM, KGRN, dev, KNRM);
-			T = aT;
+			operation = 3;
+			interrupt = 1;
 		}
 		// Handle display
 		if (!strncmp("D", buff, cmpSize))
 		{
 			if (debug)
 				printf("Display has arrived\n");
-			int aT = DEF;
 			char *tokens[displaysize];
 			char *token = strtok(buff, " ");
 			int idx = 0;
@@ -345,28 +331,432 @@ int main(int argc, char *argv[])
 			}
 			if (debug)
 				printf("Arrival Time: %s%d%s\n", KGRN, aT, KNRM);
-			FILE *out;
-			char *name = malloc(sizeof(char) * (strlen(filename) - 3));
-			char *outName = malloc(sizeof(char) * (strlen(name) + 4));
-			strncpy(name, filename, strlen(filename) - 3);
-			name[strlen(name) - 1] = '\0';
-			snprintf(outName, strlen(name) + 15, "%s_D%d.json", name, aT);
-			out = fopen(outName, "w");
-			fprintf(out, "{\n");
-			fprintf(out, "\t\"current_time\":%d,\n", T);
-			fprintf(out, "\t\"total_memory\":%d,\n", M);
-			fprintf(out, "\t\"available_memory\":%d,\n", M - M);
-			fprintf(out, "\t\"total_devices\":%d,\n", S);
-			fprintf(out, "\t\"available_devices\":%d,\n", S - S);
-			fprintf(out, "\t\"quantum\":%d\n", Q);
-			fprintf(out, "}\0");
-			fclose(out);
-			free(outName);
-			free(name);
-			T = aT;
+			operation = 4;
 		}
+		if (aT == T)
+		{
+			printf("%d:%s %d\n", T, buff, aT);
+			switch (operation)
+			{
+			case 1:
+				if (mem < M && dev < S)
+				{
+
+					if (mem < memLeft)
+					{
+						// There is enough memory to run
+						pushFIFO(ready, id, aT, mem, dev, run, pri);
+						memLeft -= mem;
+					}
+					else
+					{
+						// Not enough memory, put it on hold
+						if (pri == 1)
+						{
+							pushSJF(hQ1, id, aT, mem, dev, run, pri);
+						}
+						else
+						{
+							pushFIFO(hQ2, id, aT, mem, dev, run, pri);
+						}
+					}
+				}
+				break;
+			case 2:
+				if (id == running->jobID)
+				{
+					if (running->devicesAssigned + dev < running->serial)
+					{
+						// Assign devices to running process
+						running->devicesAssigned += dev;
+						devLeft -= dev;
+						// Move running process to end of ready queue
+						struct node *newRunning;
+						pushNodeFIFO(ready, running);
+						// Pop of top of ready queue to put on running
+						cpyNode(newRunning, ready->head);
+						pop(ready);
+						cpyNode(running, newRunning);
+					}
+					else
+					{
+						// Not enough devices left, put on device queue
+						struct node *newRunning;
+						pushNodeFIFO(wait, running);
+						// Pop of top of ready queue to put on running
+						cpyNode(newRunning, ready->head);
+						pop(ready);
+						cpyNode(running, newRunning);
+					}
+				}
+				break;
+			case 3:
+				if (id == running->jobID)
+				{
+					if (running->devicesAssigned - dev > 0)
+					{
+						// Assign devices to running process
+						running->devicesAssigned -= dev;
+						devLeft += dev;
+						// Move running process to end of ready queue
+						struct node *newRunning;
+						pushNodeFIFO(ready, running);
+						// Pop of top of ready queue to put on running
+						cpyNode(newRunning, ready->head);
+						pop(ready);
+						cpyNode(running, newRunning);
+						int max = wait->size;
+						int c = 0;
+						while (wait->head && c < max)
+						{
+							// Pop off devices on wait queue if possible
+							struct node *tmp;
+							cpyNode(tmp, wait->head);
+							pop(wait);
+							// if (needed - assigned - available < 0), put on ready
+							if (tmp->serial - tmp->devicesAssigned - devLeft)
+							{
+								pushNodeFIFO(ready, tmp);
+							}
+							else
+							{
+								// Put it back on wait queue
+								pushNodeFIFO(wait, tmp);
+								// avoid double counting
+								c++;
+								// if c>max, that means that we have scanned all the items on the wait queue
+							}
+						}
+					}
+					else
+					{
+						// Not enough devices to unassing, put on wait
+						struct node *newRunning;
+						pushNodeFIFO(wait, running);
+						// Pop of top of ready queue to put on running
+						cpyNode(newRunning, ready->head);
+						pop(ready);
+						cpyNode(running, newRunning);
+					}
+				}
+				break;
+			case 4:
+				printf("ready: \n");
+				printLL(ready);
+				printf("wait: \n");
+				printLL(wait);
+				printf("hQ1: \n");
+				printLL(hQ1);
+				printf("hQ2: \n");
+				printLL(hQ2);
+				printf("complete: \n");
+				printLL(complete);
+				break;
+			}
+		}
+		else
+		{
+			while (T < aT)
+			{
+				printf("%d:%s %d\n", T, buff, aT);
+				if (interrupt && T + Q > aT)
+				{
+					T = aT;
+					interrupt = 0;
+					switch (operation)
+					{
+					case 1:
+						if (mem < M && dev < S)
+						{
+
+							if (mem < memLeft)
+							{
+								// There is enough memory to run
+								pushFIFO(ready, id, aT, mem, dev, run, pri);
+								memLeft -= mem;
+							}
+							else
+							{
+								// Not enough memory, put it on hold
+								if (pri == 1)
+								{
+									pushSJF(hQ1, id, aT, mem, dev, run, pri);
+								}
+								else
+								{
+									pushFIFO(hQ2, id, aT, mem, dev, run, pri);
+								}
+							}
+						}
+						break;
+					case 2:
+						if (id == running->jobID)
+						{
+							if (running->devicesAssigned + dev < running->serial)
+							{
+								// Assign devices to running process
+								running->devicesAssigned += dev;
+								devLeft -= dev;
+								// Move running process to end of ready queue
+								struct node *newRunning;
+								pushNodeFIFO(ready, running);
+								// Pop of top of ready queue to put on running
+								cpyNode(newRunning, ready->head);
+								pop(ready);
+								cpyNode(running, newRunning);
+							}
+							else
+							{
+								// Not enough devices left, put on device queue
+								struct node *newRunning;
+								pushNodeFIFO(wait, running);
+								// Pop of top of ready queue to put on running
+								cpyNode(newRunning, ready->head);
+								pop(ready);
+								cpyNode(running, newRunning);
+							}
+						}
+						break;
+					case 3:
+						if (id == running->jobID)
+						{
+							if (running->devicesAssigned - dev > 0)
+							{
+								// Assign devices to running process
+								running->devicesAssigned -= dev;
+								devLeft += dev;
+								// Move running process to end of ready queue
+								struct node *newRunning;
+								pushNodeFIFO(ready, running);
+								// Pop of top of ready queue to put on running
+								cpyNode(newRunning, ready->head);
+								pop(ready);
+								cpyNode(running, newRunning);
+								int max = wait->size;
+								int c = 0;
+								while (wait->head && c < max)
+								{
+									// Pop off devices on wait queue if possible
+									struct node *tmp;
+									cpyNode(tmp, wait->head);
+									pop(wait);
+									// if (needed - assigned - available < 0), put on ready
+									if (tmp->serial - tmp->devicesAssigned - devLeft)
+									{
+										pushNodeFIFO(ready, tmp);
+									}
+									else
+									{
+										// Put it back on wait queue
+										pushNodeFIFO(wait, tmp);
+										// avoid double counting
+										c++;
+										// if c>max, that means that we have scanned all the items on the wait queue
+									}
+								}
+							}
+							else
+							{
+								// Not enough devices to unassing, put on wait
+								struct node *newRunning;
+								pushNodeFIFO(wait, running);
+								// Pop of top of ready queue to put on running
+								cpyNode(newRunning, ready->head);
+								pop(ready);
+								cpyNode(running, newRunning);
+							}
+						}
+						break;
+					case 4:
+						printf("ready: \n");
+						printLL(ready);
+						printf("wait: \n");
+						printLL(wait);
+						printf("hQ1: \n");
+						printLL(hQ1);
+						printf("hQ2: \n");
+						printLL(hQ2);
+						printf("complete: \n");
+						printLL(complete);
+						break;
+					}
+					continue;
+				}
+				printf("Running a quantum from %d to %d\n", T, T + Q);
+				int newT = T + Q;
+				// Event happened in between time quantums
+				if (aT < newT)
+				{
+					switch (operation)
+					{
+					case 1:
+						if (mem < M && dev < S)
+						{
+
+							if (mem < memLeft)
+							{
+								// There is enough memory to run
+								pushFIFO(ready, id, aT, mem, dev, run, pri);
+								memLeft -= mem;
+							}
+							else
+							{
+								// Not enough memory, put it on hold
+								if (pri == 1)
+								{
+									pushSJF(hQ1, id, aT, mem, dev, run, pri);
+								}
+								else
+								{
+									pushFIFO(hQ2, id, aT, mem, dev, run, pri);
+								}
+							}
+						}
+						break;
+					case 2:
+						if (id == running->jobID)
+						{
+							if (running->devicesAssigned + dev < running->serial)
+							{
+								// Assign devices to running process
+								running->devicesAssigned += dev;
+								devLeft -= dev;
+								// Move running process to end of ready queue
+								struct node *newRunning;
+								pushNodeFIFO(ready, running);
+								// Pop of top of ready queue to put on running
+								cpyNode(newRunning, ready->head);
+								pop(ready);
+								cpyNode(running, newRunning);
+							}
+							else
+							{
+								// Not enough devices left, put on device queue
+								struct node *newRunning;
+								pushNodeFIFO(wait, running);
+								// Pop of top of ready queue to put on running
+								cpyNode(newRunning, ready->head);
+								pop(ready);
+								cpyNode(running, newRunning);
+							}
+						}
+						break;
+					case 3:
+						if (id == running->jobID)
+						{
+							if (running->devicesAssigned - dev > 0)
+							{
+								// Assign devices to running process
+								running->devicesAssigned -= dev;
+								devLeft += dev;
+								// Move running process to end of ready queue
+								struct node *newRunning;
+								pushNodeFIFO(ready, running);
+								// Pop of top of ready queue to put on running
+								cpyNode(newRunning, ready->head);
+								pop(ready);
+								cpyNode(running, newRunning);
+								int max = wait->size;
+								int c = 0;
+								while (wait->head && c < max)
+								{
+									// Pop off devices on wait queue if possible
+									struct node *tmp;
+									cpyNode(tmp, wait->head);
+									pop(wait);
+									// if (needed - assigned - available < 0), put on ready
+									if (tmp->serial - tmp->devicesAssigned - devLeft)
+									{
+										pushNodeFIFO(ready, tmp);
+									}
+									else
+									{
+										// Put it back on wait queue
+										pushNodeFIFO(wait, tmp);
+										// avoid double counting
+										c++;
+										// if c>max, that means that we have scanned all the items on the wait queue
+									}
+								}
+							}
+							else
+							{
+								// Not enough devices to unassing, put on wait
+								struct node *newRunning;
+								pushNodeFIFO(wait, running);
+								// Pop of top of ready queue to put on running
+								cpyNode(newRunning, ready->head);
+								pop(ready);
+								cpyNode(running, newRunning);
+							}
+						}
+						break;
+					case 4:
+						printf("ready: \n");
+						printLL(ready);
+						printf("wait: \n");
+						printLL(wait);
+						printf("hQ1: \n");
+						printLL(hQ1);
+						printf("hQ2: \n");
+						printLL(hQ2);
+						printf("complete: \n");
+						printLL(complete);
+						break;
+					}
+				}
+			}
+		}
+		/*
+		// Check if its a valid job
+		if (mem > M)
+		{
+			if (debug)
+				printf("%sError%s, job %s%d%s requires to much memory: have %s%d%s, %s%d%s requested\n", KRED, KNRM, KGRN, id, KNRM, KGRN, M, KNRM, KRED, mem, KNRM);
+		}
+		if (dev > S)
+		{
+			if (debug)
+				printf("%sError%s, job %s%d%s requires to many devices: have %s%d%s, %s%d%s requested\n", KRED, KNRM, KGRN, id, KNRM, KGRN, S, KNRM, KRED, dev, KNRM);
+		}
+		
+		
+		FILE *out;
+		char *name = malloc(sizeof(char) * (strlen(filename) - 3));
+		char *outName = malloc(sizeof(char) * (strlen(name) + 4));
+		strncpy(name, filename, strlen(filename) - 3);
+		name[strlen(name) - 1] = '\0';
+		snprintf(outName, strlen(name) + 15, "%s_D%d.json", name, aT);
+		out = fopen(outName, "w");
+		fprintf(out, "{\n");
+		fprintf(out, "\t\"current_time\":%d,\n", T);
+		fprintf(out, "\t\"total_memory\":%d,\n", M);
+		fprintf(out, "\t\"available_memory\":%d,\n", M - M);
+		fprintf(out, "\t\"total_devices\":%d,\n", S);
+		fprintf(out, "\t\"available_devices\":%d,\n", S - S);
+		fprintf(out, "\t\"quantum\":%d\n", Q);
+		fprintf(out, "}\0");
+		fclose(out);
+		free(outName);
+		free(name);
+		*/
 	}
-	
+	printf("ready: \n");
+	printLL(ready);
+	printf("wait: \n");
+	printLL(wait);
+	printf("hQ1: \n");
+	printLL(hQ1);
+	printf("hQ2: \n");
+	printLL(hQ2);
+	printf("complete: \n");
+	printLL(complete);
+
+	list_free(ready);
+	list_free(wait);
+	list_free(hQ1);
+	list_free(hQ2);
+	list_free(complete);
 	fclose(inp);
 	return EXIT;
 }
@@ -394,22 +784,4 @@ int readLine(FILE *fp, char buff[255])
 		return EOFREACHED;
 	}
 	return OK;
-}
-const char *getFilenameExt(const char *filename)
-{
-	/*
-		This function consumes a file name and extracts the file extension
-		parameters:
-			filename - a char array containing the filename
-		returns:
-			ext - a char array containing the file extension
-	*/
-	const char *ext = strrchr(filename, '.');
-	// If there is no file extension, return an empty string
-	if (!ext || ext == filename)
-	{
-		return "";
-	}
-	// Return the file exension
-	return ext + 1;
 }

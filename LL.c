@@ -58,6 +58,8 @@ struct LL *pushSJF(struct LL *l, const int id, const int at, const int mm, const
 	n->runTime = rt;
 	n->priority = pri;
 	n->devicesAssigned = 0;
+	n->timeLeft = rt;
+	n->timeFinished=-1;
 	n->next = NULL;
 
 	if (l == NULL)
@@ -153,6 +155,7 @@ struct LL *pushFIFO(struct LL *l, const int id, const int at, const int mm, cons
 	n->priority = pri;
 	n->devicesAssigned = 0;
 	n->timeLeft = rt;
+	n->timeFinished=-1;
 	n->next = NULL;
 	n->prev = NULL;
 
@@ -280,7 +283,7 @@ void printNode(const struct node *n)
 {
 	if (n)
 	{
-		printf("Arr = %d Job = %d Mem = %d Ser = %d R = %d P = %d\n", n->arrivalTime, n->jobID, n->mainMemory, n->serial, n->runTime, n->priority);
+		printf("Arr = %d Job = %d Mem = %d Ser = %d R = %d P = %d Time Left = %d Time Finished = %d\n", n->arrivalTime, n->jobID, n->mainMemory, n->serial, n->runTime, n->priority,n->timeLeft,n->timeFinished);
 	} //IF
 	else
 	{

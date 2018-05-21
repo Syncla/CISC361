@@ -456,6 +456,7 @@ int main(int argc, char *argv[])
 		}
 		else
 		{
+			
 			while (T < aT)
 			{
 				printf("%d:%s %d\n", T, buff, aT);
@@ -585,8 +586,15 @@ int main(int argc, char *argv[])
 				printf("Running a quantum from %d to %d\n", T, T + Q);
 				int newT = T + Q;
 				// Event happened in between time quantums
+				// It will only ever be a new job arrival or a print out, as the other events have interrupts
+				int leftOver = Q;
 				if (aT < newT)
 				{
+					// If there is nothing running, no need to process previous portion of time slice
+					if (!running)
+					{
+						leftOver = (T+Q)-aT;
+					}
 					switch (operation)
 					{
 					case 1:
@@ -692,6 +700,7 @@ int main(int argc, char *argv[])
 						}
 						break;
 					case 4:
+						// REMEMBER TO PRINT OUT STATE AT NEWT, NOT T OR T+Q
 						printf("ready: \n");
 						printLL(ready);
 						printf("wait: \n");
@@ -703,6 +712,53 @@ int main(int argc, char *argv[])
 						printf("complete: \n");
 						printLL(complete);
 						break;
+					}
+				}
+				// Process the time slice
+				while (leftOver>0)
+				{
+					// Current running process can work
+					if (running->devicesAssigned==running->serial)
+					{
+						
+						
+						if (running->timeLeft<leftOver)
+						{
+							// Process is done in this quantum
+							// Get the finish time
+							running->timeFinished = T+leftOver-(T+leftOver-running->timeLeft);
+							// Reallocate memory
+							memLeft+=running->mainMemory;
+							// Reallocate resources
+							devLeft+=running->serial;
+							// Push it to the complete nodes
+							struct node * tmp;
+							cpyNode(tmp,running);
+							pushNodeFIFO(complete,tmp);
+							// Take away how much time was used to finish the process
+							leftOver-=tmp->timeLeft;
+							// Job complete, check queues if something can be added to ready queue
+							// If a new process is avaliable, switch to it
+							if (ready->head)
+							{
+								// Pop the ready queue
+								cpyNode(running,ready->head);
+								pop(ready);
+							}
+							
+						}
+						else
+						{
+							// Process cannot finish in this quantum
+							running->timeLeft -=leftOver;
+							struct node * tmp;
+							cpyNode(tmp,running);
+							pushNodeFIFO(ready,tmp);
+							// Grab next process of of ready queue
+							cpyNode(running,ready->head);
+							pop(ready);
+							leftOver = 0;
+						}
 					}
 				}
 			}

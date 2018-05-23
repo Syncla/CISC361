@@ -172,6 +172,8 @@ int main(int argc, char *argv[])
 		int dev = DEF;
 		int run = DEF;
 		interrupt = 0;
+		// READ LINE
+
 		// Handle job arrival (Quantum is not interrupted)
 		if (!strncmp("A", buff, cmpSize))
 		{
@@ -335,6 +337,8 @@ int main(int argc, char *argv[])
 				printf("Arrival Time: %s%d%s\n", KGRN, aT, KNRM);
 			operation = 4;
 		}
+
+		// PROCESS WHAT HAPPENED
 		if (aT == T)
 		{
 			printf("%d:%s %d\n", T, buff, aT);

@@ -53,5 +53,6 @@ void printJobIDs(FILE * ,struct LL *);
 
 void printDetail(FILE * ,struct LL *);
 
+struct LL *popByID(struct LL *,int); //REMOVES FIRST IN 
 
 #endif

@@ -3,7 +3,7 @@
 #include <string.h>
 #include "LL.h"
 
-/*
+///*
 int main(void){
 	struct LL* myListFIFO = NULL;
     struct LL* myListSJF = NULL;
@@ -14,6 +14,8 @@ pushFIFO(myListFIFO,1,1,1,1,1,1);
 pushFIFO(myListFIFO,2,2,2,2,2,1);
 pushFIFO(myListFIFO,3,3,3,3,3,1);
 pushFIFO(myListFIFO,4,4,4,4,4,1);
+pushFIFO(myListFIFO,5,4,4,4,4,1);
+pushFIFO(myListFIFO,6,4,4,4,4,1);
 
 printLL(myListFIFO);
 
@@ -37,17 +39,22 @@ printLL(myListSJF);
 pop(myListSJF);
 
 printLL(myListSJF);
-
     
+popByID(myListSJF,3);
+    
+printLL(myListSJF);
+    
+    
+/*    
 FILE *otter;
 otter = fopen("filename.txt","w");
 printDetail(otter, myListSJF);
     
-fclose(otter);
+fclose(otter);*/
 
 return 0;
 }//main
-*/
+//*/
 
 //FUNCTIONS DEFINITIONS
 struct LL *pushSJF(struct LL *l, const int id, const int at, const int mm, const int ser, const int rt, const int pri)
@@ -95,7 +102,7 @@ struct LL *pushSJF(struct LL *l, const int id, const int at, const int mm, const
 	else
 	{
 		//printf("adding node:%d\n",n->jobID);
-		if (n->mainMemory <= l->head->mainMemory)
+		if (n->timeLeft <= l->head->timeLeft)
 		{
 			n->next = l->head;
 			l->head->prev = n;
@@ -106,7 +113,7 @@ struct LL *pushSJF(struct LL *l, const int id, const int at, const int mm, const
 			struct node *currNode;
 			currNode = l->head;
 			//printf("currNode created for J=%d\n",n->jobID);
-			while (currNode->next != NULL && currNode->mainMemory < n->mainMemory)
+			while (currNode->next != NULL && currNode->timeLeft < n->timeLeft)
 			{
 				currNode = currNode->next;
 			} //while
@@ -123,7 +130,8 @@ struct LL *pushSJF(struct LL *l, const int id, const int at, const int mm, const
 			{
 				n->next = currNode->prev->next;
 				n->prev = currNode->prev;
-				currNode->prev->next = n;
+                n->prev->next = n;
+                n->next->prev = n;
 
 				/*
                 printf("n: ");
@@ -192,6 +200,7 @@ struct LL *pushFIFO(struct LL *l, const int id, const int at, const int mm, cons
 	else
 	{ /* printf("List not empty, adding element to tail\n"); */
 		l->tail->next = n;
+        n->prev = l->tail;
 		l->tail = n;
 	} //ELSE
 	l->size++;
@@ -211,13 +220,13 @@ struct LL *pop(struct LL *l)
 	
 	if (NULL == l)
 	{
-		printf("List is empty\n");
+		//printf("List is empty\n");
 		return l;
 	}
 
 	else if (NULL == l->head && NULL == l->tail)
 	{
-		printf("Well, List is empty\n");
+		//printf("Well, List is empty\n");
 		return l;
 	}
 
@@ -379,3 +388,40 @@ void printDetail(FILE *out, struct LL *l){
 		} //FOR
 	}//IF
 }//printDetail
+
+struct LL *popByID(struct LL *l,int id){
+  if (l==NULL){
+        return NULL;
+    }//if
+    
+    struct node *n = NULL;
+    
+	
+    if (l){
+		for (n = l->head; n; n = n->next){
+            if (n->jobID == id){
+                printf("match found\n");
+                if (n == l->head){
+                    printf("HEAD: pop\n");
+                    pop(l);
+                }//if
+                else if (n == l->tail){
+                    printf("TAIL:\n");
+                    n->prev->next = NULL;
+                    l->tail = n->prev;
+                }//esle if
+                else{
+                    printf("MIDDLEOUT\n");
+                    //printf("n:%d, pre:%d, nxt:%d\n",n->jobID,n->prev->jobID,n->next->jobID);
+                    //printf("n prepre:%d\n",n->prev->prev->jobID);
+                    //printf("n nextpre:%d\n",n->next->prev->jobID);
+                    n->prev->next = n->next;
+                    n->next->prev = n->prev;
+                }//else
+            };
+        
+        } //FOR
+	}//IF 
+    
+    return l;
+}//popbyID

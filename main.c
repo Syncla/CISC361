@@ -169,28 +169,78 @@ int main(int argc, char *argv[])
 	}
 
 	int eventStart = T;
-	int eventEnd = T + Q;
+	int eventEnd = T;
 
 	int quantumEnd = T + Q;
 	int quantumStart = T;
 
 	int workTime = Q;
 	//processLine(buff,&aT,&id,&pri,&mem,&dev,&run,&operation);
-
+	int status = OK;
 	// Process Events
 	while (1)
 	{
+		
+		eventEnd = T + Q;
 		// First line has special case
-		if (aT != DEF)
+		if (aT == DEF)
 		{
-			processLine(buff, &aT, &id, &pri, &mem, &dev, &run, &operation);
+			status = readLine(inp, buff);
+			operation = processLine(buff, &aT, &id, &pri, &mem, &dev, &run, &operation);
 		}
-		if (operation == 2 || operation ==3)
+		
+		if (operation == 2 || operation == 3)
 		{
-			if (aT<eventEnd)
+			if (aT < eventEnd)
 			{
 				eventEnd = aT;
 			}
+		}
+		else if (operation == 1)
+		{
+			
+			if (mem < M && dev < S)
+			{
+
+				if (mem < memLeft)
+				{
+					// There is enough memory to run
+					pushFIFO(ready, id, aT, mem, dev, run, pri);
+					memLeft -= mem;
+				}
+				else
+				{
+					// Not enough memory, put it on hold
+					if (pri == 1)
+					{
+						pushSJF(hQ1, id, aT, mem, dev, run, pri);
+					}
+					else
+					{
+						pushFIFO(hQ2, id, aT, mem, dev, run, pri);
+					}
+				}
+				// Put it in list of all jobs
+				pushFIFO(all, id, aT, mem, dev, run, pri);
+			}
+		}
+		else if (operation == 5)
+		{
+			
+			printf("aT: %d\n",aT);
+			printf("ready: \n");
+			printLL(ready);
+			printf("wait: \n");
+			printLL(wait);
+			printf("hQ1: \n");
+			printLL(hQ1);
+			printf("hQ2: \n");
+			printLL(hQ2);
+			printf("complete: \n");
+			printLL(complete);
+			printf("all \n");
+			printLL(all);
+			printf("\n");
 		}
 		workTime = eventEnd - T;
 		// While you can work
@@ -199,78 +249,118 @@ int main(int argc, char *argv[])
 			// if there is a job running
 			if (running)
 			{
+				// TODO FINISH REMOVAL OF NODES IN QUEUES
 				// Have enough devices to run
 				if (running->devicesAssigned == running->serial)
 				{
 					// Not enough time to finish
-					if (running->timeLeft>workTime)
+					if (running->timeLeft > workTime)
 					{
-						running->timeLeft-=workTime;
+						running->timeLeft -= workTime;
 						workTime = 0;
 					}
 					// job finished
 					else
-					{ 
+					{
 						// compute leftover time
 						workTime -= running->timeLeft;
+						printf("%d\n",workTime);
 						// Finish the job
 						running->timeLeft = 0;
 						running->complete = 1;
-						running->timeFinished = eventEnd - workTime;
+						running->timeFinished = 10;
 						// deallocate resources
 						devLeft += running->devicesAssigned;
 						memLeft += running->mainMemory;
 						running->devicesAssigned = 0;
-						// Check if a task in wait queue can be put in the ready queue
-						struct node * tmp = wait->head;
+						pushNodeFIFO(complete, running);
+						cpyNode(complete->tail,running);
 						
+						// If possible, transfer jobs to ready queue
+						// Check if a task in wait queue can be put in the ready queue
+						struct node *tmp = wait->head;
 						while (tmp != NULL)
 						{
-							if (tmp->devicesRequested<=devLeft)
+							if (tmp->devicesRequested <= devLeft)
 							{
-								devLeft-=tmp->devicesRequested;
+								devLeft -= tmp->devicesRequested;
 								tmp->devicesAssigned += tmp->devicesRequested;
 								tmp->devicesRequested = 0;
+								pushNodeFIFO(ready, tmp);
+								int idToRemove = tmp->jobID;
+								tmp = tmp->next;
+								// TODO REMOVE TMP BY ID FROM WAIT
 							}
-							tmp = tmp->next;
+							else
+							{
+								tmp = tmp->next;
+							}
 						}
-						// Check if a task in the hold queue can be put in the ready queue 
+						// Check if a task in the hold queue can be put in the ready queue
+						// Check queue 1 first
+						tmp = hQ1->head;
+						while (tmp != NULL)
+						{
+							if (tmp->serial <= devLeft && tmp->mainMemory < memLeft)
+							{
+								pushNodeFIFO(ready, tmp);
+								int idToRemove = tmp->jobID;
+								tmp = tmp->next;
+								// TODO REMOVE TMP BY ID FROM hQ1
+							}
+							else
+							{
+								tmp = tmp->next;
+							}
+						}
+						tmp = hQ2->head;
+						while (tmp != NULL)
+						{
+							if (tmp->serial <= devLeft && tmp->mainMemory < memLeft)
+							{
+								pushNodeFIFO(ready, tmp);
+								int idToRemove = tmp->jobID;
+								tmp = tmp->next;
+								// TODO REMOVE TMP BY ID FROM hQ1
+							}
+							else
+							{
+								tmp = tmp->next;
+							}
+						}
+
+						// Grab the next job from the ready queue
+						running = ready->head;
+						pop(ready);
 					}
 				}
 			}
+			else
+			{
+				// No job is running, grab head of ready
+				running = ready->head;
+				pop(ready);
+				if (running == NULL)
+				{
+					// Nothing to run
+					// TODO, Should we check other queues here?
+					workTime = 0;
+				}
+			}
 		}
-		
+	
+		status = readLine(inp, buff);
+		printf("%s\n",buff);
+		if (status)
+			operation = processLine(buff, &aT, &id, &pri, &mem, &dev, &run, &operation);
+		else
+			break;
+		T = eventEnd;
 	}
 
 	/*
 // Job creation
-				if (operation == 1)
-				{
-					if (mem < M && dev < S)
-					{
-
-						if (mem < memLeft)
-						{
-							// There is enough memory to run
-							pushFIFO(ready, id, aT, mem, dev, run, pri);
-							memLeft -= mem;
-						}
-						else
-						{
-							// Not enough memory, put it on hold
-							if (pri == 1)
-							{
-								pushSJF(hQ1, id, aT, mem, dev, run, pri);
-							}
-							else
-							{
-								pushFIFO(hQ2, id, aT, mem, dev, run, pri);
-							}
-						}
-						// Put it in list of all jobs
-						pushFIFO(all, id, aT, mem, dev, run, pri);
-					}
-				}
+				
 				*/
 	/*
 		FILE *out;
@@ -417,24 +507,26 @@ int main(int argc, char *argv[])
 			}
 		*/
 
-printf("ready: \n");
-printLL(ready);
-printf("wait: \n");
-printLL(wait);
-printf("hQ1: \n");
-printLL(hQ1);
-printf("hQ2: \n");
-printLL(hQ2);
-printf("complete: \n");
-printLL(complete);
-
-list_free(ready);
-list_free(wait);
-list_free(hQ1);
-list_free(hQ2);
-list_free(complete);
-fclose(inp);
-return EXIT;
+	printf("ready: \n");
+	printLL(ready);
+	printf("wait: \n");
+	printLL(wait);
+	printf("hQ1: \n");
+	printLL(hQ1);
+	printf("hQ2: \n");
+	printLL(hQ2);
+	printf("complete: \n");
+	printLL(complete);
+	printf("all \n");
+	printLL(all);
+	list_free(ready);
+	list_free(wait);
+	list_free(hQ1);
+	list_free(hQ2);
+	list_free(complete);
+	list_free(all);
+	fclose(inp);
+	return EXIT;
 }
 void clearBuff(char buff[255])
 {
@@ -523,7 +615,7 @@ int processLine(char buff[255], int *aT, int *id, int *pri, int *mem, int *dev, 
 		*operation = 1;
 	}
 	// Handle request for devices (Interrupt quantum)
-	if (!strncmp("Q", buff, cmpSize))
+	else if (!strncmp("Q", buff, cmpSize))
 	{
 		if (debug)
 			printf("Device request has arrived\n");
@@ -563,7 +655,7 @@ int processLine(char buff[255], int *aT, int *id, int *pri, int *mem, int *dev, 
 		*operation = 2;
 	}
 	// Handle release for devices
-	if (!strncmp("L", buff, cmpSize))
+	else if (!strncmp("L", buff, cmpSize))
 	{
 		if (debug)
 			printf("Device release has arrived\n");
@@ -602,7 +694,7 @@ int processLine(char buff[255], int *aT, int *id, int *pri, int *mem, int *dev, 
 		*operation = 3;
 	}
 	// Handle display
-	if (!strncmp("D", buff, cmpSize))
+	else if (!strncmp("D", buff, cmpSize))
 	{
 		if (debug)
 			printf("Display has arrived\n");
@@ -632,4 +724,5 @@ int processLine(char buff[255], int *aT, int *id, int *pri, int *mem, int *dev, 
 			printf("Arrival Time: %s%d%s\n", KGRN, *aT, KNRM);
 		*operation = 4;
 	}
+	return *operation;
 }

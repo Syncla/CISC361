@@ -61,7 +61,7 @@ struct LL *pushSJF(struct LL *l, const int id, const int at, const int mm, const
 	n->timeLeft = rt;
 	n->timeFinished=-1;
 	n->next = NULL;
-
+	n->complete=0;
 	if (l == NULL)
 	{
 		printf("Queue not initialized\n");
@@ -158,6 +158,7 @@ struct LL *pushFIFO(struct LL *l, const int id, const int at, const int mm, cons
 	n->timeFinished=-1;
 	n->next = NULL;
 	n->prev = NULL;
+	n->complete=0;
 
 	if (l == NULL)
 	{

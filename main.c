@@ -68,12 +68,14 @@ int main(int argc, char *argv[])
 	// 2 : request for device
 	// 3 : release device
 	// 4 : printout
-
+	struct node getSize;
+	int nodeSize = sizeof(getSize);
 	// Buffer to read lines into
 	char buff[buffSize];
 	// Current running node
-	struct node *running = NULL;
-
+	struct node *running = malloc(sizeof(struct node));
+	running->complete=1;
+	running->jobID=-1;
 	// Queues
 	struct LL *hQ1 = list_new();	  // SJF Hold queue
 	struct LL *hQ2 = list_new();	  // FIFO Hold queue
@@ -459,7 +461,6 @@ int main(int argc, char *argv[])
 			
 			while (T < aT)
 			{
-				printf("%d:%s %d\n", T, buff, aT);
 				if (interrupt && T + Q > aT)
 				{
 					T = aT;
@@ -714,16 +715,18 @@ int main(int argc, char *argv[])
 						break;
 					}
 				}
+				
 				// Process the time slice
 				while (leftOver>0)
 				{
 					// Current running process can work
-					if (running->devicesAssigned==running->serial)
+					if (running->complete != 0 && (running->devicesAssigned==running->serial))
 					{
 						
 						
 						if (running->timeLeft<leftOver)
 						{
+							printf("Working %d\n",running->jobID);
 							// Process is done in this quantum
 							// Get the finish time
 							running->timeFinished = T+leftOver-(T+leftOver-running->timeLeft);
@@ -743,6 +746,7 @@ int main(int argc, char *argv[])
 							{
 								// Pop the ready queue
 								cpyNode(running,ready->head);
+								
 								pop(ready);
 							}
 							
@@ -760,6 +764,23 @@ int main(int argc, char *argv[])
 							leftOver = 0;
 						}
 					}
+					// No node is running
+					else if (running->complete == 1){
+						
+						// If job in ready queue, pop it
+						if (ready->head != NULL){
+							printNode(running);
+							cpyNode(running,ready->head);
+							//printNode(running);
+							pop(ready);
+						}
+						// TODO Check other queues
+						else{
+							leftOver = 0;
+						}
+						
+					}
+					T+=Q;
 				}
 			}
 		}

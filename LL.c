@@ -53,7 +53,13 @@ int main(void){
     popByID(myListFIFO,5);    
     printLL(myListFIFO);
     
+<<<<<<< HEAD
     return 0;
+=======
+fclose(otter);
+
+return 0;
+>>>>>>> 0b5051b5237bb4a9da184b5e3af20a9b8fb12484
 }//main
 */
 

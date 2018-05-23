@@ -182,6 +182,7 @@ int main(int argc, char *argv[])
 	{
 		
 		eventEnd = T + Q;
+		eventStart = T;
 		// First line has special case
 		if (aT == DEF)
 		{
@@ -204,9 +205,15 @@ int main(int argc, char *argv[])
 
 				if (mem < memLeft)
 				{
+					if (ready->head != NULL)
+					{
+						// If there is nothing running, change when to start
+						eventStart = aT;
+					}
 					// There is enough memory to run
 					pushFIFO(ready, id, aT, mem, dev, run, pri);
 					memLeft -= mem;
+					
 				}
 				else
 				{
@@ -242,7 +249,7 @@ int main(int argc, char *argv[])
 			printLL(all);
 			printf("\n");
 		}
-		workTime = eventEnd - T;
+		workTime = eventEnd - eventStart;
 		// While you can work
 		while (workTime > 0)
 		{
@@ -274,8 +281,8 @@ int main(int argc, char *argv[])
 						memLeft += running->mainMemory;
 						running->devicesAssigned = 0;
 						pushNodeFIFO(complete, running);
-						cpyNode(complete->tail,running);
-						
+						complete->tail->timeFinished = eventEnd-workTime;
+						printNode(complete->tail);
 						// If possible, transfer jobs to ready queue
 						// Check if a task in wait queue can be put in the ready queue
 						struct node *tmp = wait->head;

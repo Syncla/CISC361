@@ -47,7 +47,15 @@ int debug = 0;
 
 int readLine(FILE *fp, char buff[255]);
 void clearBuff(char buff[255]);
-
+int min(int x,int y);
+int aT = DEF;
+int id = DEF;
+int pri = DEF;
+int mem = DEF;
+int dev = DEF;
+int run = DEF;
+int operation = DEF;
+int processLine(char buff[255], int *aT, int *id, int *pri, int *mem, int *dev, int *run, int * operation);
 // Main
 int main(int argc, char *argv[])
 {
@@ -73,16 +81,14 @@ int main(int argc, char *argv[])
 	// Buffer to read lines into
 	char buff[buffSize];
 	// Current running node
-	struct node *running = malloc(sizeof(struct node));
-	running->complete=1;
-	running->jobID=-1;
+	struct node *running = NULL;//malloc(sizeof(struct node));
 	// Queues
 	struct LL *hQ1 = list_new();	  // SJF Hold queue
 	struct LL *hQ2 = list_new();	  // FIFO Hold queue
 	struct LL *complete = list_new(); // List of complete tasks
 	struct LL *ready = list_new();	// Ready queue
 	struct LL *wait = list_new();
-
+	struct LL *all = list_new();
 	// File stuff
 	FILE *inp;				  // File handle
 	char *filename = argv[1]; // Filename
@@ -161,647 +167,62 @@ int main(int argc, char *argv[])
 		if (debug)
 			printf("Start Time:%s%d%s | M=%s%d%s | S=%s%d%s | Q=%s%d%s\n", KGRN, T, KNRM, KGRN, M, KNRM, KGRN, S, KNRM, KGRN, Q, KNRM);
 	}
-	// Read file
+	
+	int nextQuantum = T+Q;
+	int quantumEnd = T+Q;
+	int nextEvent = nextQuantum;
+	int workTime = Q;
+	//processLine(buff,&aT,&id,&pri,&mem,&dev,&run,&operation);
 
-	while (readLine(inp, buff) || running)
+
+	// Process Events	
+	while (1)
 	{
-		int aT = DEF;
-		int id = DEF;
-		int pri = DEF;
-		int mem = DEF;
-		int dev = DEF;
-		int run = DEF;
-		interrupt = 0;
-		// READ LINE
-
-		// Handle job arrival (Quantum is not interrupted)
-		if (!strncmp("A", buff, cmpSize))
+		// First line has special case
+		if (aT != DEF){
+			processLine(buff,&aT,&id,&pri,&mem,&dev,&run,&operation);
+		}	
+		// Update if the quantum should end early
+		if (aT<nextQuantum)
 		{
-			if (debug)
-				printf("New job has arrived\n");
-
-			char *tokens[jobsize];
-			char *token = strtok(buff, " ");
-			int idx = 0;
-			while (token)
+			// Interrupt
+			if (operation == 2 || operation ==3)
 			{
-				tokens[idx] = malloc(sizeof(char) * strlen(token));
-				strncpy(tokens[idx++], token, strlen(token));
-				token = strtok(NULL, " ");
+				quantumEnd = aT;
+				workTime = aT - T;
 			}
-			for (int i = 0; i < jobsize; i++)
-			{
-				token = strtok(tokens[i], "=");
-				while (token)
-				{
-					if (!strncmp(token, "J\0", cmpSize))
-					{
-						id = atoi(strtok(NULL, "="));
-					}
-					else if (!strncmp(token, "M\0", cmpSize))
-					{
-						mem = atoi(strtok(NULL, "="));
-					}
-					else if (!strncmp(token, "S\0", cmpSize))
-					{
-						dev = atoi(strtok(NULL, "="));
-					}
-					else if (!strncmp(token, "R\0", cmpSize))
-					{
-						run = atoi(strtok(NULL, "="));
-					}
-					else if (!strncmp(token, "P\0", cmpSize))
-					{
-						pri = atoi(strtok(NULL, "="));
-					}
-					else if (!strncmp(token, "A\0", cmpSize))
-					{
-						aT = atoi(tokens[++i]);
-					}
-					token = strtok(NULL, "=");
-				}
-			}
-			if (debug)
-				printf("Arrival Time: %s%d%s | Job ID: %s%d%s | Memory usage: %s%d%s | Device usage: %s%d%s | Run time: %s%d%s | Priority: %s%d%s\n", KGRN, aT, KNRM, KGRN, id, KNRM, KGRN, mem, KNRM, KGRN, dev, KNRM, KGRN, run, KNRM, KGRN, pri, KNRM);
-			operation = 1;
 		}
-		// Handle request for devices (Interrupt quantum)
-		if (!strncmp("Q", buff, cmpSize))
-		{
-			if (debug)
-				printf("Device request has arrived\n");
-			char *tokens[requestsize];
-			char *token = strtok(buff, " ");
-			int idx = 0;
-			while (token)
-			{
-				tokens[idx] = malloc(sizeof(char) * strlen(token));
-				strncpy(tokens[idx++], token, strlen(token));
-				token = strtok(NULL, " ");
-			}
-			for (int i = 0; i < requestsize; i++)
-			{
-				token = strtok(tokens[i], "=");
-				while (token)
+	
+
+// Job creation
+				if (operation == 1)
 				{
-					if (!strncmp(token, "J\0", cmpSize))
+					if (mem < M && dev < S)
 					{
-						id = atoi(strtok(NULL, "="));
-					}
 
-					else if (!strncmp(token, "D\0", cmpSize))
-					{
-						dev = atoi(strtok(NULL, "="));
-					}
-					else if (!strncmp(token, "Q\0", cmpSize))
-					{
-						aT = atoi(tokens[++i]);
-					}
-					token = strtok(NULL, "=");
-				}
-			}
-			if (debug)
-				printf("Arrival Time: %s%d%s | Job ID: %s%d%s | Devices requested: %s%d%s\n", KGRN, aT, KNRM, KGRN, id, KNRM, KGRN, dev, KNRM);
-
-			interrupt = 1;
-			operation = 2;
-		}
-		// Handle release for devices
-		if (!strncmp("L", buff, cmpSize))
-		{
-			if (debug)
-				printf("Device release has arrived\n");
-			char *tokens[releasesize];
-			char *token = strtok(buff, " ");
-			int idx = 0;
-			while (token)
-			{
-				tokens[idx] = malloc(sizeof(char) * strlen(token));
-				strncpy(tokens[idx++], token, strlen(token));
-				token = strtok(NULL, " ");
-			}
-			for (int i = 0; i < releasesize; i++)
-			{
-				token = strtok(tokens[i], "=");
-				while (token)
-				{
-					if (!strncmp(token, "J\0", cmpSize))
-					{
-						id = atoi(strtok(NULL, "="));
-					}
-
-					else if (!strncmp(token, "D\0", cmpSize))
-					{
-						dev = atoi(strtok(NULL, "="));
-					}
-					else if (!strncmp(token, "L\0", cmpSize))
-					{
-						aT = atoi(tokens[++i]);
-					}
-					token = strtok(NULL, "=");
-				}
-			}
-			if (debug)
-				printf("Arrival Time: %s%d%s | Job ID: %s%d%s | Devices requested: %s%d%s\n", KGRN, aT, KNRM, KGRN, id, KNRM, KGRN, dev, KNRM);
-			operation = 3;
-			interrupt = 1;
-		}
-		// Handle display
-		if (!strncmp("D", buff, cmpSize))
-		{
-			if (debug)
-				printf("Display has arrived\n");
-			char *tokens[displaysize];
-			char *token = strtok(buff, " ");
-			int idx = 0;
-			while (token)
-			{
-				tokens[idx] = (char *)malloc(sizeof(char) * strlen(token));
-				strncpy(tokens[idx++], token, strlen(token));
-				token = strtok(NULL, " ");
-			}
-			for (int i = 0; i < displaysize; i++)
-			{
-
-				token = strtok(tokens[i], "=");
-				while (token)
-				{
-					if (!strncmp(token, "D\0", cmpSize))
-					{
-						aT = atoi(tokens[++i]);
-					}
-					token = strtok(NULL, "=");
-				}
-			}
-			if (debug)
-				printf("Arrival Time: %s%d%s\n", KGRN, aT, KNRM);
-			operation = 4;
-		}
-
-		// PROCESS WHAT HAPPENED
-		if (aT == T)
-		{
-			printf("%d:%s %d\n", T, buff, aT);
-			switch (operation)
-			{
-			case 1:
-				if (mem < M && dev < S)
-				{
-
-					if (mem < memLeft)
-					{
-						// There is enough memory to run
-						pushFIFO(ready, id, aT, mem, dev, run, pri);
-						memLeft -= mem;
-					}
-					else
-					{
-						// Not enough memory, put it on hold
-						if (pri == 1)
+						if (mem < memLeft)
 						{
-							pushSJF(hQ1, id, aT, mem, dev, run, pri);
+							// There is enough memory to run
+							pushFIFO(ready, id, aT, mem, dev, run, pri);
+							memLeft -= mem;
 						}
 						else
 						{
-							pushFIFO(hQ2, id, aT, mem, dev, run, pri);
+							// Not enough memory, put it on hold
+							if (pri == 1)
+							{
+								pushSJF(hQ1, id, aT, mem, dev, run, pri);
+							}
+							else
+							{
+								pushFIFO(hQ2, id, aT, mem, dev, run, pri);
+							}
 						}
+						// Put it in list of all jobs
+						pushFIFO(all, id, aT, mem, dev, run, pri);
 					}
 				}
-				break;
-			case 2:
-				if (id == running->jobID)
-				{
-					if (running->devicesAssigned + dev < running->serial)
-					{
-						// Assign devices to running process
-						running->devicesAssigned += dev;
-						devLeft -= dev;
-						// Move running process to end of ready queue
-						struct node *newRunning;
-						pushNodeFIFO(ready, running);
-						// Pop of top of ready queue to put on running
-						cpyNode(newRunning, ready->head);
-						pop(ready);
-						cpyNode(running, newRunning);
-					}
-					else
-					{
-						// Not enough devices left, put on device queue
-						struct node *newRunning;
-						pushNodeFIFO(wait, running);
-						// Pop of top of ready queue to put on running
-						cpyNode(newRunning, ready->head);
-						pop(ready);
-						cpyNode(running, newRunning);
-					}
-				}
-				break;
-			case 3:
-				if (id == running->jobID)
-				{
-					if (running->devicesAssigned - dev > 0)
-					{
-						// Assign devices to running process
-						running->devicesAssigned -= dev;
-						devLeft += dev;
-						// Move running process to end of ready queue
-						struct node *newRunning;
-						pushNodeFIFO(ready, running);
-						// Pop of top of ready queue to put on running
-						cpyNode(newRunning, ready->head);
-						pop(ready);
-						cpyNode(running, newRunning);
-						int max = wait->size;
-						int c = 0;
-						while (wait->head && c < max)
-						{
-							// Pop off devices on wait queue if possible
-							struct node *tmp;
-							cpyNode(tmp, wait->head);
-							pop(wait);
-							// if (needed - assigned - available < 0), put on ready
-							if (tmp->serial - tmp->devicesAssigned - devLeft)
-							{
-								pushNodeFIFO(ready, tmp);
-							}
-							else
-							{
-								// Put it back on wait queue
-								pushNodeFIFO(wait, tmp);
-								// avoid double counting
-								c++;
-								// if c>max, that means that we have scanned all the items on the wait queue
-							}
-						}
-					}
-					else
-					{
-						// Not enough devices to unassing, put on wait
-						struct node *newRunning;
-						pushNodeFIFO(wait, running);
-						// Pop of top of ready queue to put on running
-						cpyNode(newRunning, ready->head);
-						pop(ready);
-						cpyNode(running, newRunning);
-					}
-				}
-				break;
-			case 4:
-				printf("ready: \n");
-				printLL(ready);
-				printf("wait: \n");
-				printLL(wait);
-				printf("hQ1: \n");
-				printLL(hQ1);
-				printf("hQ2: \n");
-				printLL(hQ2);
-				printf("complete: \n");
-				printLL(complete);
-				break;
-			}
-		}
-		else
-		{
-			
-			while (T < aT)
-			{
-				if (interrupt && T + Q > aT)
-				{
-					T = aT;
-					interrupt = 0;
-					switch (operation)
-					{
-					case 1:
-						if (mem < M && dev < S)
-						{
-
-							if (mem < memLeft)
-							{
-								// There is enough memory to run
-								pushFIFO(ready, id, aT, mem, dev, run, pri);
-								memLeft -= mem;
-							}
-							else
-							{
-								// Not enough memory, put it on hold
-								if (pri == 1)
-								{
-									pushSJF(hQ1, id, aT, mem, dev, run, pri);
-								}
-								else
-								{
-									pushFIFO(hQ2, id, aT, mem, dev, run, pri);
-								}
-							}
-						}
-						break;
-					case 2:
-						if (id == running->jobID)
-						{
-							if (running->devicesAssigned + dev < running->serial)
-							{
-								// Assign devices to running process
-								running->devicesAssigned += dev;
-								devLeft -= dev;
-								// Move running process to end of ready queue
-								struct node *newRunning;
-								pushNodeFIFO(ready, running);
-								// Pop of top of ready queue to put on running
-								cpyNode(newRunning, ready->head);
-								pop(ready);
-								cpyNode(running, newRunning);
-							}
-							else
-							{
-								// Not enough devices left, put on device queue
-								struct node *newRunning;
-								pushNodeFIFO(wait, running);
-								// Pop of top of ready queue to put on running
-								cpyNode(newRunning, ready->head);
-								pop(ready);
-								cpyNode(running, newRunning);
-							}
-						}
-						break;
-					case 3:
-						if (id == running->jobID)
-						{
-							if (running->devicesAssigned - dev > 0)
-							{
-								// Assign devices to running process
-								running->devicesAssigned -= dev;
-								devLeft += dev;
-								// Move running process to end of ready queue
-								struct node *newRunning;
-								pushNodeFIFO(ready, running);
-								// Pop of top of ready queue to put on running
-								cpyNode(newRunning, ready->head);
-								pop(ready);
-								cpyNode(running, newRunning);
-								int max = wait->size;
-								int c = 0;
-								while (wait->head && c < max)
-								{
-									// Pop off devices on wait queue if possible
-									struct node *tmp;
-									cpyNode(tmp, wait->head);
-									pop(wait);
-									// if (needed - assigned - available < 0), put on ready
-									if (tmp->serial - tmp->devicesAssigned - devLeft)
-									{
-										pushNodeFIFO(ready, tmp);
-									}
-									else
-									{
-										// Put it back on wait queue
-										pushNodeFIFO(wait, tmp);
-										// avoid double counting
-										c++;
-										// if c>max, that means that we have scanned all the items on the wait queue
-									}
-								}
-							}
-							else
-							{
-								// Not enough devices to unassing, put on wait
-								struct node *newRunning;
-								pushNodeFIFO(wait, running);
-								// Pop of top of ready queue to put on running
-								cpyNode(newRunning, ready->head);
-								pop(ready);
-								cpyNode(running, newRunning);
-							}
-						}
-						break;
-					case 4:
-						printf("ready: \n");
-						printLL(ready);
-						printf("wait: \n");
-						printLL(wait);
-						printf("hQ1: \n");
-						printLL(hQ1);
-						printf("hQ2: \n");
-						printLL(hQ2);
-						printf("complete: \n");
-						printLL(complete);
-						break;
-					}
-					continue;
-				}
-				printf("Running a quantum from %d to %d\n", T, T + Q);
-				int newT = T + Q;
-				// Event happened in between time quantums
-				// It will only ever be a new job arrival or a print out, as the other events have interrupts
-				int leftOver = Q;
-				if (aT < newT)
-				{
-					// If there is nothing running, no need to process previous portion of time slice
-					if (!running)
-					{
-						leftOver = (T+Q)-aT;
-					}
-					switch (operation)
-					{
-					case 1:
-						if (mem < M && dev < S)
-						{
-
-							if (mem < memLeft)
-							{
-								// There is enough memory to run
-								pushFIFO(ready, id, aT, mem, dev, run, pri);
-								memLeft -= mem;
-							}
-							else
-							{
-								// Not enough memory, put it on hold
-								if (pri == 1)
-								{
-									pushSJF(hQ1, id, aT, mem, dev, run, pri);
-								}
-								else
-								{
-									pushFIFO(hQ2, id, aT, mem, dev, run, pri);
-								}
-							}
-						}
-						break;
-					case 2:
-						if (id == running->jobID)
-						{
-							if (running->devicesAssigned + dev < running->serial)
-							{
-								// Assign devices to running process
-								running->devicesAssigned += dev;
-								devLeft -= dev;
-								// Move running process to end of ready queue
-								struct node *newRunning;
-								pushNodeFIFO(ready, running);
-								// Pop of top of ready queue to put on running
-								cpyNode(newRunning, ready->head);
-								pop(ready);
-								cpyNode(running, newRunning);
-							}
-							else
-							{
-								// Not enough devices left, put on device queue
-								struct node *newRunning;
-								pushNodeFIFO(wait, running);
-								// Pop of top of ready queue to put on running
-								cpyNode(newRunning, ready->head);
-								pop(ready);
-								cpyNode(running, newRunning);
-							}
-						}
-						break;
-					case 3:
-						if (id == running->jobID)
-						{
-							if (running->devicesAssigned - dev > 0)
-							{
-								// Assign devices to running process
-								running->devicesAssigned -= dev;
-								devLeft += dev;
-								// Move running process to end of ready queue
-								struct node *newRunning;
-								pushNodeFIFO(ready, running);
-								// Pop of top of ready queue to put on running
-								cpyNode(newRunning, ready->head);
-								pop(ready);
-								cpyNode(running, newRunning);
-								int max = wait->size;
-								int c = 0;
-								while (wait->head && c < max)
-								{
-									// Pop off devices on wait queue if possible
-									struct node *tmp;
-									cpyNode(tmp, wait->head);
-									pop(wait);
-									// if (needed - assigned - available < 0), put on ready
-									if (tmp->serial - tmp->devicesAssigned - devLeft)
-									{
-										pushNodeFIFO(ready, tmp);
-									}
-									else
-									{
-										// Put it back on wait queue
-										pushNodeFIFO(wait, tmp);
-										// avoid double counting
-										c++;
-										// if c>max, that means that we have scanned all the items on the wait queue
-									}
-								}
-							}
-							else
-							{
-								// Not enough devices to unassing, put on wait
-								struct node *newRunning;
-								pushNodeFIFO(wait, running);
-								// Pop of top of ready queue to put on running
-								cpyNode(newRunning, ready->head);
-								pop(ready);
-								cpyNode(running, newRunning);
-							}
-						}
-						break;
-					case 4:
-						// REMEMBER TO PRINT OUT STATE AT NEWT, NOT T OR T+Q
-						printf("ready: \n");
-						printLL(ready);
-						printf("wait: \n");
-						printLL(wait);
-						printf("hQ1: \n");
-						printLL(hQ1);
-						printf("hQ2: \n");
-						printLL(hQ2);
-						printf("complete: \n");
-						printLL(complete);
-						break;
-					}
-				}
-				
-				// Process the time slice
-				while (leftOver>0)
-				{
-					// Current running process can work
-					if (running->complete != 0 && (running->devicesAssigned==running->serial))
-					{
-						
-						
-						if (running->timeLeft<leftOver)
-						{
-							printf("Working %d\n",running->jobID);
-							// Process is done in this quantum
-							// Get the finish time
-							running->timeFinished = T+leftOver-(T+leftOver-running->timeLeft);
-							// Reallocate memory
-							memLeft+=running->mainMemory;
-							// Reallocate resources
-							devLeft+=running->serial;
-							// Push it to the complete nodes
-							struct node * tmp;
-							cpyNode(tmp,running);
-							pushNodeFIFO(complete,tmp);
-							// Take away how much time was used to finish the process
-							leftOver-=tmp->timeLeft;
-							// Job complete, check queues if something can be added to ready queue
-							// If a new process is avaliable, switch to it
-							if (ready->head)
-							{
-								// Pop the ready queue
-								cpyNode(running,ready->head);
-								
-								pop(ready);
-							}
-							
-						}
-						else
-						{
-							// Process cannot finish in this quantum
-							running->timeLeft -=leftOver;
-							struct node * tmp;
-							cpyNode(tmp,running);
-							pushNodeFIFO(ready,tmp);
-							// Grab next process of of ready queue
-							cpyNode(running,ready->head);
-							pop(ready);
-							leftOver = 0;
-						}
-					}
-					// No node is running
-					else if (running->complete == 1){
-						
-						// If job in ready queue, pop it
-						if (ready->head != NULL){
-							printNode(running);
-							cpyNode(running,ready->head);
-							//printNode(running);
-							pop(ready);
-						}
-						// TODO Check other queues
-						else{
-							leftOver = 0;
-						}
-						
-					}
-					T+=Q;
-				}
-			}
-		}
 		/*
-		// Check if its a valid job
-		if (mem > M)
-		{
-			if (debug)
-				printf("%sError%s, job %s%d%s requires to much memory: have %s%d%s, %s%d%s requested\n", KRED, KNRM, KGRN, id, KNRM, KGRN, M, KNRM, KRED, mem, KNRM);
-		}
-		if (dev > S)
-		{
-			if (debug)
-				printf("%sError%s, job %s%d%s requires to many devices: have %s%d%s, %s%d%s requested\n", KRED, KNRM, KGRN, id, KNRM, KGRN, S, KNRM, KRED, dev, KNRM);
-		}
-		
-		
 		FILE *out;
 		char *name = malloc(sizeof(char) * (strlen(filename) - 3));
 		char *outName = malloc(sizeof(char) * (strlen(name) + 4));
@@ -820,6 +241,130 @@ int main(int argc, char *argv[])
 		fclose(out);
 		free(outName);
 		free(name);
+		switch (operation)
+			{
+				// Job creation
+				case 1:
+						if (mem < M && dev < S)
+						{
+
+							if (mem < memLeft)
+							{
+								// There is enough memory to run
+								pushFIFO(ready, id, aT, mem, dev, run, pri);
+								memLeft -= mem;
+							}
+							else
+							{
+								// Not enough memory, put it on hold
+								if (pri == 1)
+								{
+									pushSJF(hQ1, id, aT, mem, dev, run, pri);
+								}
+								else
+								{
+									pushFIFO(hQ2, id, aT, mem, dev, run, pri);
+								}
+							}
+							// Put it in list of all jobs
+							pushFIFO(all, id, aT, mem, dev, run, pri);
+						}
+						break;
+				// Request for device
+				case 2:
+						if (id == running->jobID)
+						{
+							if (running->devicesAssigned + dev < running->serial)
+							{
+								// Assign devices to running process
+								running->devicesAssigned += dev;
+								devLeft -= dev;
+								// Move running process to end of ready queue
+								struct node *newRunning;
+								pushNodeFIFO(ready, running);
+								// Pop of top of ready queue to put on running
+								cpyNode(newRunning, ready->head);
+								pop(ready);
+								cpyNode(running, newRunning);
+							}
+							else
+							{
+								// Not enough devices left, put on device queue
+								struct node *newRunning;
+								pushNodeFIFO(wait, running);
+								// Pop of top of ready queue to put on running
+								cpyNode(newRunning, ready->head);
+								pop(ready);
+								cpyNode(running, newRunning);
+							}
+						}
+						break;
+				// Release device
+				case 3:
+						if (id == running->jobID)
+						{
+							if (running->devicesAssigned - dev > 0)
+							{
+								// Assign devices to running process
+								running->devicesAssigned -= dev;
+								devLeft += dev;
+								// Move running process to end of ready queue
+								struct node *newRunning;
+								pushNodeFIFO(ready, running);
+								// Pop of top of ready queue to put on running
+								cpyNode(newRunning, ready->head);
+								pop(ready);
+								cpyNode(running, newRunning);
+								int max = wait->size;
+								int c = 0;
+								while (wait->head && c < max)
+								{
+									// Pop off devices on wait queue if possible
+									struct node *tmp;
+									cpyNode(tmp, wait->head);
+									pop(wait);
+									// if (needed - assigned - available < 0), put on ready
+									if (tmp->serial - tmp->devicesAssigned - devLeft)
+									{
+										pushNodeFIFO(ready, tmp);
+									}
+									else
+									{
+										// Put it back on wait queue
+										pushNodeFIFO(wait, tmp);
+										// avoid double counting
+										c++;
+										// if c>max, that means that we have scanned all the items on the wait queue
+									}
+								}
+							}
+							else
+							{
+								// Not enough devices to unassing, put on wait
+								struct node *newRunning;
+								pushNodeFIFO(wait, running);
+								// Pop of top of ready queue to put on running
+								cpyNode(newRunning, ready->head);
+								pop(ready);
+								cpyNode(running, newRunning);
+							}
+						}
+						break;
+				// Print out list
+				case 4:
+					printf("ready: \n");
+					printLL(ready);
+					printf("wait: \n");
+					printLL(wait);
+					printf("hQ1: \n");
+					printLL(hQ1);
+					printf("hQ2: \n");
+					printLL(hQ2);
+					printf("complete: \n");
+					printLL(complete);
+					break;
+			
+			}
 		*/
 	}
 	printf("ready: \n");
@@ -865,4 +410,173 @@ int readLine(FILE *fp, char buff[255])
 		return EOFREACHED;
 	}
 	return OK;
+}
+int min(int x, int y){
+	if (x<y){
+		return x;
+	}
+	return y;
+}
+int processLine(char buff[255], int *aT, int *id, int *pri, int *mem, int *dev, int *run, int * operation){
+	// Handle job arrival (Quantum is not interrupted)
+			if (!strncmp("A", buff, cmpSize))
+			{
+				if (debug)
+					printf("New job has arrived\n");
+
+				char *tokens[jobsize];
+				char *token = strtok(buff, " ");
+				int idx = 0;
+				while (token)
+				{
+					tokens[idx] = malloc(sizeof(char) * strlen(token));
+					strncpy(tokens[idx++], token, strlen(token));
+					token = strtok(NULL, " ");
+				}
+				for (int i = 0; i < jobsize; i++)
+				{
+					token = strtok(tokens[i], "=");
+					while (token)
+					{
+						if (!strncmp(token, "J\0", cmpSize))
+						{
+							*id = atoi(strtok(NULL, "="));
+						}
+						else if (!strncmp(token, "M\0", cmpSize))
+						{
+							*mem = atoi(strtok(NULL, "="));
+						}
+						else if (!strncmp(token, "S\0", cmpSize))
+						{
+							*dev = atoi(strtok(NULL, "="));
+						}
+						else if (!strncmp(token, "R\0", cmpSize))
+						{
+							*run = atoi(strtok(NULL, "="));
+						}
+						else if (!strncmp(token, "P\0", cmpSize))
+						{
+							*pri = atoi(strtok(NULL, "="));
+						}
+						else if (!strncmp(token, "A\0", cmpSize))
+						{
+							*aT = atoi(tokens[++i]);
+						}
+						token = strtok(NULL, "=");
+					}
+				}
+				if (debug)
+					printf("Arrival Time: %s%d%s | Job ID: %s%d%s | Memory usage: %s%d%s | Device usage: %s%d%s | Run time: %s%d%s | Priority: %s%d%s\n", KGRN, *aT, KNRM, KGRN, *id, KNRM, KGRN, *mem, KNRM, KGRN, *dev, KNRM, KGRN, *run, KNRM, KGRN, *pri, KNRM);
+				*operation = 1;
+			}
+			// Handle request for devices (Interrupt quantum)
+			if (!strncmp("Q", buff, cmpSize))
+			{
+				if (debug)
+					printf("Device request has arrived\n");
+				char *tokens[requestsize];
+				char *token = strtok(buff, " ");
+				int idx = 0;
+				while (token)
+				{
+					tokens[idx] = malloc(sizeof(char) * strlen(token));
+					strncpy(tokens[idx++], token, strlen(token));
+					token = strtok(NULL, " ");
+				}
+				for (int i = 0; i < requestsize; i++)
+				{
+					token = strtok(tokens[i], "=");
+					while (token)
+					{
+						if (!strncmp(token, "J\0", cmpSize))
+						{
+							*id = atoi(strtok(NULL, "="));
+						}
+
+						else if (!strncmp(token, "D\0", cmpSize))
+						{
+							*dev = atoi(strtok(NULL, "="));
+						}
+						else if (!strncmp(token, "Q\0", cmpSize))
+						{
+							*aT = atoi(tokens[++i]);
+						}
+						token = strtok(NULL, "=");
+					}
+				}
+				if (debug)
+					printf("Arrival Time: %s%d%s | Job ID: %s%d%s | Devices requested: %s%d%s\n", KGRN, *aT, KNRM, KGRN, *id, KNRM, KGRN, *dev, KNRM);
+
+				*operation = 2;
+			}
+			// Handle release for devices
+			if (!strncmp("L", buff, cmpSize))
+			{
+				if (debug)
+					printf("Device release has arrived\n");
+				char *tokens[releasesize];
+				char *token = strtok(buff, " ");
+				int idx = 0;
+				while (token)
+				{
+					tokens[idx] = malloc(sizeof(char) * strlen(token));
+					strncpy(tokens[idx++], token, strlen(token));
+					token = strtok(NULL, " ");
+				}
+				for (int i = 0; i < releasesize; i++)
+				{
+					token = strtok(tokens[i], "=");
+					while (token)
+					{
+						if (!strncmp(token, "J\0", cmpSize))
+						{
+							*id = atoi(strtok(NULL, "="));
+						}
+
+						else if (!strncmp(token, "D\0", cmpSize))
+						{
+							*dev = atoi(strtok(NULL, "="));
+						}
+						else if (!strncmp(token, "L\0", cmpSize))
+						{
+							*aT = atoi(tokens[++i]);
+						}
+						token = strtok(NULL, "=");
+					}
+				}
+				if (debug)
+					printf("Arrival Time: %s%d%s | Job ID: %s%d%s | Devices requested: %s%d%s\n", KGRN, *aT, KNRM, KGRN, *id, KNRM, KGRN, *dev, KNRM);
+				*operation = 3;
+			}
+			// Handle display
+			if (!strncmp("D", buff, cmpSize))
+			{
+				if (debug)
+					printf("Display has arrived\n");
+				char *tokens[displaysize];
+				char *token = strtok(buff, " ");
+				int idx = 0;
+				while (token)
+				{
+					tokens[idx] = (char *)malloc(sizeof(char) * strlen(token));
+					strncpy(tokens[idx++], token, strlen(token));
+					token = strtok(NULL, " ");
+				}
+				for (int i = 0; i < displaysize; i++)
+				{
+
+					token = strtok(tokens[i], "=");
+					while (token)
+					{
+						if (!strncmp(token, "D\0", cmpSize))
+						{
+							*aT = atoi(tokens[++i]);
+						}
+						token = strtok(NULL, "=");
+					}
+				}
+				if (debug)
+					printf("Arrival Time: %s%d%s\n", KGRN, *aT, KNRM);
+				*operation = 4;
+			}
 }

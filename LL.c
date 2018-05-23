@@ -3,58 +3,59 @@
 #include <string.h>
 #include "LL.h"
 
-///*
+/*
 int main(void){
 	struct LL* myListFIFO = NULL;
     struct LL* myListSJF = NULL;
 
-myListFIFO = list_new();
+    myListFIFO = list_new();
 
-pushFIFO(myListFIFO,1,1,1,1,1,1);
-pushFIFO(myListFIFO,2,2,2,2,2,1);
-pushFIFO(myListFIFO,3,3,3,3,3,1);
-pushFIFO(myListFIFO,4,4,4,4,4,1);
-pushFIFO(myListFIFO,5,4,4,4,4,1);
-pushFIFO(myListFIFO,6,4,4,4,4,1);
+    pushFIFO(myListFIFO,1,1,1,1,1,1);
+    pushFIFO(myListFIFO,2,2,2,2,2,1);
+    pushFIFO(myListFIFO,3,3,3,3,3,1);
+    pushFIFO(myListFIFO,4,4,4,4,4,1);
+    pushFIFO(myListFIFO,5,4,4,4,4,1);
+    pushFIFO(myListFIFO,6,4,4,4,4,1);
 
-printLL(myListFIFO);
+    printLL(myListFIFO);
 
-pop(myListFIFO);
+    pop(myListFIFO);
 
-printLL(myListFIFO);
+    printLL(myListFIFO);
 
-printf("FIFO test complete, SJF test begin:\n");
+    printf("FIFO test complete, SJF test begin:\n");
+
+    myListSJF = list_new();
+    pushSJF(myListSJF,1,1,4,1,1,1);
+    pushSJF(myListSJF,2,1,4,1,1,1);
+    pushSJF(myListSJF,3,1,4,1,1,1);
+    pushSJF(myListSJF,4,1,2,1,1,1);
+    pushSJF(myListSJF,5,1,3,1,1,1);
+    pushSJF(myListSJF,6,1,6,1,1,1);
+    pushSJF(myListSJF,7,1,1,1,1,1);
+
+    printLL(myListSJF);
+
+    pop(myListSJF);
+
+    printLL(myListSJF);
+    popByID(myListSJF,3);
+    printLL(myListSJF);
+    popByID(myListSJF,5);
+    printLL(myListSJF);
+
     
-myListSJF = list_new();
-pushSJF(myListSJF,1,1,4,1,1,1);
-pushSJF(myListSJF,2,1,4,1,1,1);
-pushSJF(myListSJF,3,1,4,1,1,1);
-pushSJF(myListSJF,4,1,2,1,1,1);
-pushSJF(myListSJF,5,1,3,1,1,1);
-pushSJF(myListSJF,6,1,6,1,1,1);
-pushSJF(myListSJF,7,1,1,1,1,1);
-
-printLL(myListSJF);
-
-pop(myListSJF);
-
-printLL(myListSJF);
+    printLL(myListFIFO);
+    popByID(myListFIFO,3);    
+    printLL(myListFIFO);
     
-popByID(myListSJF,3);
+    printLL(myListFIFO);
+    popByID(myListFIFO,5);    
+    printLL(myListFIFO);
     
-printLL(myListSJF);
-    
-    
-/*    
-FILE *otter;
-otter = fopen("filename.txt","w");
-printDetail(otter, myListSJF);
-    
-fclose(otter);*/
-
-return 0;
+    return 0;
 }//main
-//*/
+*/
 
 //FUNCTIONS DEFINITIONS
 struct LL *pushSJF(struct LL *l, const int id, const int at, const int mm, const int ser, const int rt, const int pri)
@@ -133,12 +134,6 @@ struct LL *pushSJF(struct LL *l, const int id, const int at, const int mm, const
                 n->prev->next = n;
                 n->next->prev = n;
 
-				/*
-                printf("n: ");
-                printNode(n);
-                printf("curr: ");
-                printNode(currNode);
-                */
 			} //ELSE
 		}
 	} //ELSE
@@ -396,25 +391,22 @@ struct LL *popByID(struct LL *l,int id){
     
     struct node *n = NULL;
     
-	
     if (l){
 		for (n = l->head; n; n = n->next){
+            //printf("nope:%d\n",n->jobID);
             if (n->jobID == id){
-                printf("match found\n");
+                //printf("match found\n");
                 if (n == l->head){
-                    printf("HEAD: pop\n");
+                    //printf("HEAD: pop\n");
                     pop(l);
                 }//if
                 else if (n == l->tail){
-                    printf("TAIL:\n");
+                    //printf("TAIL:\n");
                     n->prev->next = NULL;
                     l->tail = n->prev;
                 }//esle if
                 else{
-                    printf("MIDDLEOUT\n");
-                    //printf("n:%d, pre:%d, nxt:%d\n",n->jobID,n->prev->jobID,n->next->jobID);
-                    //printf("n prepre:%d\n",n->prev->prev->jobID);
-                    //printf("n nextpre:%d\n",n->next->prev->jobID);
+                    //printf("MIDDLEOUT\n");
                     n->prev->next = n->next;
                     n->next->prev = n->prev;
                 }//else

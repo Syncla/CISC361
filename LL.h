@@ -17,6 +17,7 @@ struct node
     int timeLeft;
     int timeFinished;
     int complete;
+    int devicesRequested;
     struct node *next;
     struct node *prev;
 }; //node struct

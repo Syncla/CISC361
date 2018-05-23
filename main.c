@@ -47,7 +47,7 @@ int debug = 0;
 
 int readLine(FILE *fp, char buff[255]);
 void clearBuff(char buff[255]);
-int min(int x,int y);
+int min(int x, int y);
 int aT = DEF;
 int id = DEF;
 int pri = DEF;
@@ -55,7 +55,7 @@ int mem = DEF;
 int dev = DEF;
 int run = DEF;
 int operation = DEF;
-int processLine(char buff[255], int *aT, int *id, int *pri, int *mem, int *dev, int *run, int * operation);
+int processLine(char buff[255], int *aT, int *id, int *pri, int *mem, int *dev, int *run, int *operation);
 // Main
 int main(int argc, char *argv[])
 {
@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
 	// Buffer to read lines into
 	char buff[buffSize];
 	// Current running node
-	struct node *running = NULL;//malloc(sizeof(struct node));
+	struct node *running = NULL; //malloc(sizeof(struct node));
 	// Queues
 	struct LL *hQ1 = list_new();	  // SJF Hold queue
 	struct LL *hQ2 = list_new();	  // FIFO Hold queue
@@ -167,33 +167,82 @@ int main(int argc, char *argv[])
 		if (debug)
 			printf("Start Time:%s%d%s | M=%s%d%s | S=%s%d%s | Q=%s%d%s\n", KGRN, T, KNRM, KGRN, M, KNRM, KGRN, S, KNRM, KGRN, Q, KNRM);
 	}
-	
-	int nextQuantum = T+Q;
-	int quantumEnd = T+Q;
-	int nextEvent = nextQuantum;
+
+	int eventStart = T;
+	int eventEnd = T + Q;
+
+	int quantumEnd = T + Q;
+	int quantumStart = T;
+
 	int workTime = Q;
 	//processLine(buff,&aT,&id,&pri,&mem,&dev,&run,&operation);
 
-
-	// Process Events	
+	// Process Events
 	while (1)
 	{
 		// First line has special case
-		if (aT != DEF){
-			processLine(buff,&aT,&id,&pri,&mem,&dev,&run,&operation);
-		}	
-		// Update if the quantum should end early
-		if (aT<nextQuantum)
+		if (aT != DEF)
 		{
-			// Interrupt
-			if (operation == 2 || operation ==3)
+			processLine(buff, &aT, &id, &pri, &mem, &dev, &run, &operation);
+		}
+		if (operation == 2 || operation ==3)
+		{
+			if (aT<eventEnd)
 			{
-				quantumEnd = aT;
-				workTime = aT - T;
+				eventEnd = aT;
 			}
 		}
-	
+		workTime = eventEnd - T;
+		// While you can work
+		while (workTime > 0)
+		{
+			// if there is a job running
+			if (running)
+			{
+				// Have enough devices to run
+				if (running->devicesAssigned == running->serial)
+				{
+					// Not enough time to finish
+					if (running->timeLeft>workTime)
+					{
+						running->timeLeft-=workTime;
+						workTime = 0;
+					}
+					// job finished
+					else
+					{ 
+						// compute leftover time
+						workTime -= running->timeLeft;
+						// Finish the job
+						running->timeLeft = 0;
+						running->complete = 1;
+						running->timeFinished = eventEnd - workTime;
+						// deallocate resources
+						devLeft += running->devicesAssigned;
+						memLeft += running->mainMemory;
+						running->devicesAssigned = 0;
+						// Check if a task in wait queue can be put in the ready queue
+						struct node * tmp = wait->head;
+						
+						while (tmp != NULL)
+						{
+							if (tmp->devicesRequested<=devLeft)
+							{
+								devLeft-=tmp->devicesRequested;
+								tmp->devicesAssigned += tmp->devicesRequested;
+								tmp->devicesRequested = 0;
+							}
+							tmp = tmp->next;
+						}
+						// Check if a task in the hold queue can be put in the ready queue 
+					}
+				}
+			}
+		}
+		
+	}
 
+	/*
 // Job creation
 				if (operation == 1)
 				{
@@ -222,7 +271,8 @@ int main(int argc, char *argv[])
 						pushFIFO(all, id, aT, mem, dev, run, pri);
 					}
 				}
-		/*
+				*/
+	/*
 		FILE *out;
 		char *name = malloc(sizeof(char) * (strlen(filename) - 3));
 		char *outName = malloc(sizeof(char) * (strlen(name) + 4));
@@ -366,25 +416,25 @@ int main(int argc, char *argv[])
 			
 			}
 		*/
-	}
-	printf("ready: \n");
-	printLL(ready);
-	printf("wait: \n");
-	printLL(wait);
-	printf("hQ1: \n");
-	printLL(hQ1);
-	printf("hQ2: \n");
-	printLL(hQ2);
-	printf("complete: \n");
-	printLL(complete);
 
-	list_free(ready);
-	list_free(wait);
-	list_free(hQ1);
-	list_free(hQ2);
-	list_free(complete);
-	fclose(inp);
-	return EXIT;
+printf("ready: \n");
+printLL(ready);
+printf("wait: \n");
+printLL(wait);
+printf("hQ1: \n");
+printLL(hQ1);
+printf("hQ2: \n");
+printLL(hQ2);
+printf("complete: \n");
+printLL(complete);
+
+list_free(ready);
+list_free(wait);
+list_free(hQ1);
+list_free(hQ2);
+list_free(complete);
+fclose(inp);
+return EXIT;
 }
 void clearBuff(char buff[255])
 {
@@ -411,172 +461,175 @@ int readLine(FILE *fp, char buff[255])
 	}
 	return OK;
 }
-int min(int x, int y){
-	if (x<y){
+int min(int x, int y)
+{
+	if (x < y)
+	{
 		return x;
 	}
 	return y;
 }
-int processLine(char buff[255], int *aT, int *id, int *pri, int *mem, int *dev, int *run, int * operation){
+int processLine(char buff[255], int *aT, int *id, int *pri, int *mem, int *dev, int *run, int *operation)
+{
 	// Handle job arrival (Quantum is not interrupted)
-			if (!strncmp("A", buff, cmpSize))
+	if (!strncmp("A", buff, cmpSize))
+	{
+		if (debug)
+			printf("New job has arrived\n");
+
+		char *tokens[jobsize];
+		char *token = strtok(buff, " ");
+		int idx = 0;
+		while (token)
+		{
+			tokens[idx] = malloc(sizeof(char) * strlen(token));
+			strncpy(tokens[idx++], token, strlen(token));
+			token = strtok(NULL, " ");
+		}
+		for (int i = 0; i < jobsize; i++)
+		{
+			token = strtok(tokens[i], "=");
+			while (token)
 			{
-				if (debug)
-					printf("New job has arrived\n");
-
-				char *tokens[jobsize];
-				char *token = strtok(buff, " ");
-				int idx = 0;
-				while (token)
+				if (!strncmp(token, "J\0", cmpSize))
 				{
-					tokens[idx] = malloc(sizeof(char) * strlen(token));
-					strncpy(tokens[idx++], token, strlen(token));
-					token = strtok(NULL, " ");
+					*id = atoi(strtok(NULL, "="));
 				}
-				for (int i = 0; i < jobsize; i++)
+				else if (!strncmp(token, "M\0", cmpSize))
 				{
-					token = strtok(tokens[i], "=");
-					while (token)
-					{
-						if (!strncmp(token, "J\0", cmpSize))
-						{
-							*id = atoi(strtok(NULL, "="));
-						}
-						else if (!strncmp(token, "M\0", cmpSize))
-						{
-							*mem = atoi(strtok(NULL, "="));
-						}
-						else if (!strncmp(token, "S\0", cmpSize))
-						{
-							*dev = atoi(strtok(NULL, "="));
-						}
-						else if (!strncmp(token, "R\0", cmpSize))
-						{
-							*run = atoi(strtok(NULL, "="));
-						}
-						else if (!strncmp(token, "P\0", cmpSize))
-						{
-							*pri = atoi(strtok(NULL, "="));
-						}
-						else if (!strncmp(token, "A\0", cmpSize))
-						{
-							*aT = atoi(tokens[++i]);
-						}
-						token = strtok(NULL, "=");
-					}
+					*mem = atoi(strtok(NULL, "="));
 				}
-				if (debug)
-					printf("Arrival Time: %s%d%s | Job ID: %s%d%s | Memory usage: %s%d%s | Device usage: %s%d%s | Run time: %s%d%s | Priority: %s%d%s\n", KGRN, *aT, KNRM, KGRN, *id, KNRM, KGRN, *mem, KNRM, KGRN, *dev, KNRM, KGRN, *run, KNRM, KGRN, *pri, KNRM);
-				*operation = 1;
+				else if (!strncmp(token, "S\0", cmpSize))
+				{
+					*dev = atoi(strtok(NULL, "="));
+				}
+				else if (!strncmp(token, "R\0", cmpSize))
+				{
+					*run = atoi(strtok(NULL, "="));
+				}
+				else if (!strncmp(token, "P\0", cmpSize))
+				{
+					*pri = atoi(strtok(NULL, "="));
+				}
+				else if (!strncmp(token, "A\0", cmpSize))
+				{
+					*aT = atoi(tokens[++i]);
+				}
+				token = strtok(NULL, "=");
 			}
-			// Handle request for devices (Interrupt quantum)
-			if (!strncmp("Q", buff, cmpSize))
+		}
+		if (debug)
+			printf("Arrival Time: %s%d%s | Job ID: %s%d%s | Memory usage: %s%d%s | Device usage: %s%d%s | Run time: %s%d%s | Priority: %s%d%s\n", KGRN, *aT, KNRM, KGRN, *id, KNRM, KGRN, *mem, KNRM, KGRN, *dev, KNRM, KGRN, *run, KNRM, KGRN, *pri, KNRM);
+		*operation = 1;
+	}
+	// Handle request for devices (Interrupt quantum)
+	if (!strncmp("Q", buff, cmpSize))
+	{
+		if (debug)
+			printf("Device request has arrived\n");
+		char *tokens[requestsize];
+		char *token = strtok(buff, " ");
+		int idx = 0;
+		while (token)
+		{
+			tokens[idx] = malloc(sizeof(char) * strlen(token));
+			strncpy(tokens[idx++], token, strlen(token));
+			token = strtok(NULL, " ");
+		}
+		for (int i = 0; i < requestsize; i++)
+		{
+			token = strtok(tokens[i], "=");
+			while (token)
 			{
-				if (debug)
-					printf("Device request has arrived\n");
-				char *tokens[requestsize];
-				char *token = strtok(buff, " ");
-				int idx = 0;
-				while (token)
+				if (!strncmp(token, "J\0", cmpSize))
 				{
-					tokens[idx] = malloc(sizeof(char) * strlen(token));
-					strncpy(tokens[idx++], token, strlen(token));
-					token = strtok(NULL, " ");
+					*id = atoi(strtok(NULL, "="));
 				}
-				for (int i = 0; i < requestsize; i++)
+
+				else if (!strncmp(token, "D\0", cmpSize))
 				{
-					token = strtok(tokens[i], "=");
-					while (token)
-					{
-						if (!strncmp(token, "J\0", cmpSize))
-						{
-							*id = atoi(strtok(NULL, "="));
-						}
-
-						else if (!strncmp(token, "D\0", cmpSize))
-						{
-							*dev = atoi(strtok(NULL, "="));
-						}
-						else if (!strncmp(token, "Q\0", cmpSize))
-						{
-							*aT = atoi(tokens[++i]);
-						}
-						token = strtok(NULL, "=");
-					}
+					*dev = atoi(strtok(NULL, "="));
 				}
-				if (debug)
-					printf("Arrival Time: %s%d%s | Job ID: %s%d%s | Devices requested: %s%d%s\n", KGRN, *aT, KNRM, KGRN, *id, KNRM, KGRN, *dev, KNRM);
-
-				*operation = 2;
+				else if (!strncmp(token, "Q\0", cmpSize))
+				{
+					*aT = atoi(tokens[++i]);
+				}
+				token = strtok(NULL, "=");
 			}
-			// Handle release for devices
-			if (!strncmp("L", buff, cmpSize))
+		}
+		if (debug)
+			printf("Arrival Time: %s%d%s | Job ID: %s%d%s | Devices requested: %s%d%s\n", KGRN, *aT, KNRM, KGRN, *id, KNRM, KGRN, *dev, KNRM);
+
+		*operation = 2;
+	}
+	// Handle release for devices
+	if (!strncmp("L", buff, cmpSize))
+	{
+		if (debug)
+			printf("Device release has arrived\n");
+		char *tokens[releasesize];
+		char *token = strtok(buff, " ");
+		int idx = 0;
+		while (token)
+		{
+			tokens[idx] = malloc(sizeof(char) * strlen(token));
+			strncpy(tokens[idx++], token, strlen(token));
+			token = strtok(NULL, " ");
+		}
+		for (int i = 0; i < releasesize; i++)
+		{
+			token = strtok(tokens[i], "=");
+			while (token)
 			{
-				if (debug)
-					printf("Device release has arrived\n");
-				char *tokens[releasesize];
-				char *token = strtok(buff, " ");
-				int idx = 0;
-				while (token)
+				if (!strncmp(token, "J\0", cmpSize))
 				{
-					tokens[idx] = malloc(sizeof(char) * strlen(token));
-					strncpy(tokens[idx++], token, strlen(token));
-					token = strtok(NULL, " ");
+					*id = atoi(strtok(NULL, "="));
 				}
-				for (int i = 0; i < releasesize; i++)
-				{
-					token = strtok(tokens[i], "=");
-					while (token)
-					{
-						if (!strncmp(token, "J\0", cmpSize))
-						{
-							*id = atoi(strtok(NULL, "="));
-						}
 
-						else if (!strncmp(token, "D\0", cmpSize))
-						{
-							*dev = atoi(strtok(NULL, "="));
-						}
-						else if (!strncmp(token, "L\0", cmpSize))
-						{
-							*aT = atoi(tokens[++i]);
-						}
-						token = strtok(NULL, "=");
-					}
+				else if (!strncmp(token, "D\0", cmpSize))
+				{
+					*dev = atoi(strtok(NULL, "="));
 				}
-				if (debug)
-					printf("Arrival Time: %s%d%s | Job ID: %s%d%s | Devices requested: %s%d%s\n", KGRN, *aT, KNRM, KGRN, *id, KNRM, KGRN, *dev, KNRM);
-				*operation = 3;
+				else if (!strncmp(token, "L\0", cmpSize))
+				{
+					*aT = atoi(tokens[++i]);
+				}
+				token = strtok(NULL, "=");
 			}
-			// Handle display
-			if (!strncmp("D", buff, cmpSize))
+		}
+		if (debug)
+			printf("Arrival Time: %s%d%s | Job ID: %s%d%s | Devices requested: %s%d%s\n", KGRN, *aT, KNRM, KGRN, *id, KNRM, KGRN, *dev, KNRM);
+		*operation = 3;
+	}
+	// Handle display
+	if (!strncmp("D", buff, cmpSize))
+	{
+		if (debug)
+			printf("Display has arrived\n");
+		char *tokens[displaysize];
+		char *token = strtok(buff, " ");
+		int idx = 0;
+		while (token)
+		{
+			tokens[idx] = (char *)malloc(sizeof(char) * strlen(token));
+			strncpy(tokens[idx++], token, strlen(token));
+			token = strtok(NULL, " ");
+		}
+		for (int i = 0; i < displaysize; i++)
+		{
+
+			token = strtok(tokens[i], "=");
+			while (token)
 			{
-				if (debug)
-					printf("Display has arrived\n");
-				char *tokens[displaysize];
-				char *token = strtok(buff, " ");
-				int idx = 0;
-				while (token)
+				if (!strncmp(token, "D\0", cmpSize))
 				{
-					tokens[idx] = (char *)malloc(sizeof(char) * strlen(token));
-					strncpy(tokens[idx++], token, strlen(token));
-					token = strtok(NULL, " ");
+					*aT = atoi(tokens[++i]);
 				}
-				for (int i = 0; i < displaysize; i++)
-				{
-
-					token = strtok(tokens[i], "=");
-					while (token)
-					{
-						if (!strncmp(token, "D\0", cmpSize))
-						{
-							*aT = atoi(tokens[++i]);
-						}
-						token = strtok(NULL, "=");
-					}
-				}
-				if (debug)
-					printf("Arrival Time: %s%d%s\n", KGRN, *aT, KNRM);
-				*operation = 4;
+				token = strtok(NULL, "=");
 			}
+		}
+		if (debug)
+			printf("Arrival Time: %s%d%s\n", KGRN, *aT, KNRM);
+		*operation = 4;
+	}
 }

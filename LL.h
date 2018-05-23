@@ -4,6 +4,7 @@
 #ifndef LL_H_INCLUDED
 #define LL_H_INCLUDED
 //STRUCT DEFINITIONS
+
 struct node
 {
     int jobID;
@@ -15,9 +16,9 @@ struct node
     int devicesAssigned;
     int timeLeft;
     int timeFinished;
+    int complete;
     struct node *next;
     struct node *prev;
-
 }; //node struct
 
 struct LL
@@ -43,7 +44,6 @@ void cpyNode(struct node * __dst__, struct node * __src__);
 
 void printLL(const struct LL *);     //PRINTS ENTIRE LINKED LIST
 void printNode(const struct node *); //PRINTS A NODE
-
 int getAssignedMemory(struct LL *);
 
 int getAssignedDevices(struct LL *);

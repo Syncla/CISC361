@@ -3,12 +3,13 @@
 #include <string.h>
 #include "LL.h"
 
-/*
+
 int main(void){
 	struct LL* myListFIFO = NULL;
     struct LL* myListSJF = NULL;
 
 myListFIFO = list_new();
+
 pushFIFO(myListFIFO,1,1,1,1,1,1);
 pushFIFO(myListFIFO,2,2,2,2,2,1);
 pushFIFO(myListFIFO,3,3,3,3,3,1);
@@ -36,9 +37,17 @@ printLL(myListSJF);
 pop(myListSJF);
 
 printLL(myListSJF);
+
+    
+FILE *otter;
+otter = fopen("filename.txt","w");
+printDetail(otter, myListSJF);
+    
+fclose(otter);
+
 return 0;
 }//main
-*/
+
 
 //FUNCTIONS DEFINITIONS
 struct LL *pushSJF(struct LL *l, const int id, const int at, const int mm, const int ser, const int rt, const int pri)
@@ -295,7 +304,7 @@ void printNode(const struct node *n)
 int getAssignedDevices(struct LL *l){
     int ad = 0;
     if(l){
-        for (struct node * n=l->head;n;n->next){
+        for (struct node * n=l->head;n;n=n->next){
             ad += n->devicesAssigned;
         }//for
     }//IF
@@ -308,7 +317,7 @@ int getAssignedMemory(struct LL *l){
     int am = 0;
     
     if(l){
-        for (struct node *n=l->head;n;n->next){
+        for (struct node *n=l->head;n;n=n->next){
             am += n->mainMemory;
         }//for
     }//IF
@@ -316,3 +325,57 @@ int getAssignedMemory(struct LL *l){
     return am;
     
 }// GETASSIGNEDMEMORY
+
+void printJobIDs(FILE *out, struct LL *l){
+    if (l==NULL){
+        return;
+    }//if
+    
+    struct node *n = NULL;
+    
+    fprintf(out, "\n");
+	
+    if (l){
+		for (n = l->head; n; n = n->next){
+            if (n != l->tail){
+                fprintf(out,"%d,\n",n->jobID);
+            }
+            else{
+                fprintf(out,"%d\n",n->jobID);
+            }//else
+		} //FOR
+	}//IF
+    
+}//printJobIDs
+
+
+void printDetail(FILE *out, struct LL *l){
+        if (l==NULL){
+        return;
+    }//if
+    
+    struct node *n = NULL;
+    
+    fprintf(out, "\n");
+	
+    if (l){
+		for (n = l->head; n; n = n->next){
+            if (n != l->tail){
+                fprintf(out,"\t{\n");
+                fprintf(out,"\t\t\"arrival_time\": %d,\n",n->arrivalTime);
+                fprintf(out,"\t\t\"devices_allocated\": %d,\n",n->devicesAssigned);
+                fprintf(out,"\t\t\"id\": %d,\n",n->jobID);
+                fprintf(out,"\t\t\"remaining_time\": %d\n",n->timeLeft);
+                fprintf(out, "\t},\n");
+            }
+            else{
+                fprintf(out,"\t{\n");
+                fprintf(out,"\t\t\"arrival_time\": %d,\n",n->arrivalTime);
+                fprintf(out,"\t\t\"devices_allocated\": %d,\n",n->devicesAssigned);
+                fprintf(out,"\t\t\"id\": %d,\n",n->jobID);
+                fprintf(out,"\t\t\"remaining_time\": %d\n",n->timeLeft);
+                fprintf(out, "\t}\n");
+            }//else
+		} //FOR
+	}//IF
+}//printDetail

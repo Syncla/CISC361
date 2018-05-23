@@ -48,6 +48,9 @@ int getAssignedMemory(struct LL *);
 
 int getAssignedDevices(struct LL *);
 
+void printJobIDs(FILE * ,struct LL *);
+
+void printDetail(FILE * ,struct LL *);
 
 
 #endif

@@ -3,7 +3,7 @@
 #include <string.h>
 #include "LL.h"
 
-///*
+/*
 int main(void){
 	struct LL* myListFIFO = NULL;
     struct LL* myListSJF = NULL;
@@ -50,11 +50,11 @@ FILE *otter;
 otter = fopen("filename.txt","w");
 printDetail(otter, myListSJF);
     
-fclose(otter);*/
+fclose(otter);
 
 return 0;
 }//main
-//*/
+*/
 
 //FUNCTIONS DEFINITIONS
 struct LL *pushSJF(struct LL *l, const int id, const int at, const int mm, const int ser, const int rt, const int pri)

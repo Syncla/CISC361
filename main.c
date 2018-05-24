@@ -52,7 +52,7 @@ int readLine(FILE *fp, char buff[255]);
 void clearBuff(char buff[255]);
 int min(int x, int y);
 int max(int x, int y);
-
+float turn = 0;
 int aT = DEF;
 int id = DEF;
 int pri = DEF;
@@ -94,6 +94,7 @@ int main(int argc, char *argv[])
 	struct LL *ready = list_new();	// Ready queue
 	struct LL *wait = list_new();
 	struct LL *all = list_new();
+	struct LL *submit = list_new();
 	// File stuff
 	FILE *inp;				  // File handle
 	char *filename = argv[1]; // Filename
@@ -186,6 +187,7 @@ int main(int argc, char *argv[])
 	eventStart = T;
 	quantumStart = T;
 	quantumEnd = T + Q;
+
 	// Process Events
 	while (true)
 	{
@@ -197,18 +199,19 @@ int main(int argc, char *argv[])
 			status = readLine(inp, buff);
 			operation = processLine(buff, &aT, &id, &pri, &mem, &dev, &run, &operation);
 		}
+
 		if (aT < eventEnd)
 		{
 			eventEnd = aT;
-		}	
+		}
 		// Work up until the event
 		workTime = eventEnd - eventStart;
-		
+
 		//printf("%d %d %d\n",eventStart,eventEnd,workTime);
 		// While you can work
-		if (running != NULL || ready->head !=NULL)
+		if (running != NULL || ready->head != NULL)
 		{
-			
+
 			while (workTime > 0)
 			{
 				// if there is a job running
@@ -216,41 +219,40 @@ int main(int argc, char *argv[])
 				{
 					// TODO FINISH REMOVAL OF NODES IN QUEUES
 					// Have enough devices to run
-					if (running->devicesAssigned == running->serial )
+					if (running->devicesAssigned == running->serial)
 					{
 						// Not enough time to finish
-						if (running->timeLeft > workTime && running->complete==0)
+						if (running->timeLeft > workTime && running->complete == 0)
 						{
 							running->timeLeft -= workTime;
-							
+
 							workTime = 0;
 							if (eventEnd == quantumEnd)
 							{
-								printf("Swapping job: %d with",running->jobID);
-								pushNodeFIFO(ready,running);
-								cpyNode(running,ready->head);
+								printf("Swapping job: %d with", running->jobID);
+								pushNodeFIFO(ready, running);
+								cpyNode(running, ready->head);
 								pop(ready);
-								printf(" %d\n",running->jobID);
+								printf(" %d\n", running->jobID);
 							}
-							
 						}
 						// job finished
 						else
 						{
 							//printf("JOB: %d is done\n",running->jobID);
 							// compute leftover time
-							T =  eventStart + running->timeLeft;
+							T = eventStart + running->timeLeft;
 							// New quantum
-							printf("Job finished on quantum %d to %d\n",quantumStart,T);
-							
+							printf("Job finished on quantum %d to %d\n", quantumStart, T);
+
 							quantumStart = T;
-							quantumEnd = T+Q;
+							quantumEnd = T + Q;
 							//eventEnd = quantumEnd;
 							workTime = 0;
 							// Finish the job
 							running->timeFinished = eventStart + running->timeLeft;
 							//eventEnd = T+Q;
-							printf("Job finsihed at time : %d\n",running->timeFinished);
+							printf("Job finsihed at time : %d\n", running->timeFinished);
 							running->timeLeft = 0;
 							running->complete = 1;
 							// deallocate resources
@@ -258,7 +260,7 @@ int main(int argc, char *argv[])
 							memLeft += running->mainMemory;
 							running->devicesAssigned = 0;
 							pushNodeFIFO(complete, running);
-							
+
 							// If possible, transfer jobs to ready queue
 							// Check if a task in wait queue can be put in the ready queue
 							struct node *tmp = wait->head;
@@ -315,30 +317,35 @@ int main(int argc, char *argv[])
 							// Grab the next job from the ready queue
 							if (ready->head != NULL)
 							{
-								cpyNode(running,ready->head);
+								cpyNode(running, ready->head);
 								pop(ready);
 							}
 							else
 							{
-								
+
 								// Nothing on the queue
 								workTime = 0;
 								free(running);
 								running = NULL;
 							}
-							
+
 							workTime = 0;
 						}
+					}
+					else
+					{
+						// Does not have any devices to work with
+						workTime = 0;
 					}
 				}
 				else
 				{
-					
+
 					// No job is running, grab head of ready
 					if (ready->head != NULL)
 					{
 						running = malloc(nodeSize);
-						cpyNode(running,ready->head);
+						cpyNode(running, ready->head);
 						pop(ready);
 					}
 					else
@@ -349,24 +356,26 @@ int main(int argc, char *argv[])
 				}
 			}
 		}
-		
+
 		// Update the time
-		
-		T = min(quantumEnd,eventEnd);
+
+		T = min(quantumEnd, eventEnd);
+
 		// Hit the event
 		if (aT == T)
 		{
+
 			// new job
 			if (operation == 1)
 			{
+
+				pushFIFO(submit, id, aT, mem, dev, run, pri, 0, run, (-1), 0, 0);
 				if (mem < M && dev < S)
 				{
-
 					if (mem < memLeft)
 					{
 						// There is enough memory to run
-						pushFIFO(ready, id, aT, mem, dev, run, pri,0,run,(-1),0,0);
-						
+						pushFIFO(ready, id, aT, mem, dev, run, pri, 0, run, (-1), 0, 0);
 						memLeft -= mem;
 					}
 					else
@@ -374,15 +383,15 @@ int main(int argc, char *argv[])
 						// Not enough memory, put it on hold
 						if (pri == 1)
 						{
-							pushSJF(hQ1, id, aT, mem, dev, run, pri,0,run,(-1),0,0);
+							pushSJF(hQ1, id, aT, mem, dev, run, pri, 0, run, (-1), 0, 0);
 						}
 						else
 						{
-							pushFIFO(hQ2, id, aT, mem, dev, run, pri,0,run,(-1),0,0);
+							pushFIFO(hQ2, id, aT, mem, dev, run, pri, 0, run, (-1), 0, 0);
 						}
 					}
 					// Put it in list of all jobs
-					pushFIFO(all, id, aT, mem, dev, run, pri,0,run,(-1),0,0);
+					pushFIFO(all, id, aT, mem, dev, run, pri, 0, run, (-1), 0, 0);
 					if (running == NULL)
 					{
 						// Nothing was running, start a new quantum
@@ -392,50 +401,57 @@ int main(int argc, char *argv[])
 						eventStart = aT;
 					}
 				}
-				
+
 				// Not the end of the quantum, continue processing
 				eventStart = aT;
 				eventEnd = quantumEnd;
-				
 			}
 			// Request for device
 			else if (operation == 2)
 			{
+
 				if (id == running->jobID)
+				{
+					if (running->devicesAssigned + dev < running->serial)
 					{
-						if (running->devicesAssigned + dev < running->serial)
+						// Assign devices to running process
+						running->devicesAssigned += dev;
+						devLeft -= dev;
+						// Move running process to end of ready queue
+
+						pushNodeFIFO(ready, running);
+						// Pop of top of ready queue to put on running
+
+						cpyNode(running, ready->head);
+						pop(ready);
+					}
+					else
+					{
+						// Not enough devices left, put on device queue
+						pushNodeFIFO(wait, running);
+						// Pop of top of ready queue to put on running
+						if (ready->head != NULL)
 						{
-							// Assign devices to running process
-							running->devicesAssigned += dev;
-							devLeft -= dev;
-							// Move running process to end of ready queue
-							struct node *newRunning;
-							pushNodeFIFO(ready, running);
-							// Pop of top of ready queue to put on running
-							cpyNode(newRunning, ready->head);
+							cpyNode(running, ready->head);
 							pop(ready);
-							cpyNode(running, newRunning);
 						}
 						else
 						{
-							// Not enough devices left, put on device queue
-							struct node *newRunning;
-							pushNodeFIFO(wait, running);
-							// Pop of top of ready queue to put on running
-							cpyNode(newRunning, ready->head);
-							pop(ready);
-							cpyNode(running, newRunning);
+							free(running);
+							running = NULL;
 						}
+					}
 				}
 				// Interrupt, new quantum
 				quantumStart = T;
-				quantumEnd = T+Q;
+				quantumEnd = T + Q;
 				eventStart = T;
-				eventEnd = T+Q;
+				eventEnd = T + Q;
 			}
 			// Release for device
 			else if (operation == 3)
 			{
+				if (running!=NULL){
 				if (id == running->jobID)
 				{
 					if (running->devicesAssigned - dev > 0)
@@ -444,18 +460,26 @@ int main(int argc, char *argv[])
 						running->devicesAssigned -= dev;
 						devLeft += dev;
 						// Move running process to end of ready queue
-						struct node *newRunning;
 						pushNodeFIFO(ready, running);
 						// Pop of top of ready queue to put on running
-						cpyNode(newRunning, ready->head);
-						pop(ready);
-						cpyNode(running, newRunning);
+						printf("here\n");
+						if (ready->head != NULL)
+						{
+							cpyNode(running, ready->head);
+							pop(ready);
+						}
+						else
+						{
+							free(running);
+							running = NULL;
+						}
 						int max = wait->size;
 						int c = 0;
+						struct node *tmp = malloc(nodeSize);
+						printf("here\n");
 						while (wait->head && c < max)
 						{
 							// Pop off devices on wait queue if possible
-							struct node *tmp;
 							cpyNode(tmp, wait->head);
 							pop(wait);
 							// if (needed - assigned - available < 0), put on ready
@@ -472,30 +496,102 @@ int main(int argc, char *argv[])
 								// if c>max, that means that we have scanned all the items on the wait queue
 							}
 						}
+						
+						free(tmp);
 					}
 					else
 					{
+						
 						// Not enough devices to unassing, put on wait
-						struct node *newRunning;
 						pushNodeFIFO(wait, running);
 						// Pop of top of ready queue to put on running
-						cpyNode(newRunning, ready->head);
-						pop(ready);
-						cpyNode(running, newRunning);
+						if (ready->head != NULL)
+						{
+							cpyNode(running, ready->head);
+							pop(ready);
+						}
+						else
+						{
+							free(running);
+							running = NULL;
+						}
 					}
+				}
 				}
 				// Interrupt, new quantum
 				quantumStart = T;
-				quantumEnd = T+Q;
+				quantumEnd = T + Q;
 				eventStart = T;
-				eventEnd = T+Q;
+				eventEnd = T + Q;
+				printf("Here\n");
 			}
 			// Display
 			else if (operation == 4)
 			{
-				//printf("What are you going to do?\n");
-				// Not the end of the quantum, continue processing
-				printf("%d\n",T);
+				FILE *out;
+				char *name = malloc(sizeof(char) * (strlen(filename) - 3));
+				char *outName = malloc(sizeof(char) * (strlen(name) + 4));
+				strncpy(name, filename, strlen(filename) - 3);
+				name[strlen(name) - 1] = '\0';
+				snprintf(outName, strlen(name) + 15, "%s_D%d.json", name, aT);
+				out = fopen(outName, "w");
+				fprintf(out, "{\n");
+				fprintf(out, "\t\"current_time\":%d,\n", T);
+				fprintf(out, "\t\"total_memory\":%d,\n", M);
+				int memavai = M - getAssignedMemory(ready);
+				int devavai = S - getAssignedDevices(ready);
+				if (running != NULL)
+				{
+					memavai -= running->mainMemory;
+					devavai -= running->devicesAssigned;
+				}
+
+				fprintf(out, "\t\"available_memory\":%d,\n", memavai);
+				fprintf(out, "\t\"total_devices\":%d,\n", S);
+				fprintf(out, "\t\"available_devices\":%d,\n", devavai);
+				fprintf(out, "\t\"quantum\":%d,\n", Q);
+				fprintf(out, "\t\"turnaround\":%d,\n", turn);
+				fprintf(out, "\t\"weighted_turnaround\":%d,\n", turn);
+				fprintf(out, "\t\"readyq\":[\n");
+				printJobIDs(out, ready);
+				fprintf(out, "\t],\n");
+				fprintf(out, "\t\"running\":");
+				if (running != NULL)
+				{
+					fprintf(out, "%d,\n", running->jobID);
+				}
+				else
+				{
+					fprintf(out, "-1,\n");
+				}
+				fprintf(out, "\t\"submitq\":[");
+				printJobIDs(out, submit);
+				fprintf(out, "\t],\n");
+
+				fprintf(out, "\t\"completeq\":[\n");
+				printJobIDs(out, complete);
+				fprintf(out, "\t],\n");
+
+				fprintf(out, "\t\"waitq\":[\n");
+				printJobIDs(out, wait);
+				fprintf(out, "\t],\n");
+
+				fprintf(out, "\t\"hQ1\":[\n");
+				printJobIDs(out, hQ1);
+				fprintf(out, "\t],\n");
+				
+				fprintf(out, "\t\"hQ2\":[\n");
+				printJobIDs(out, hQ2);
+				fprintf(out, "\t],\n");
+				
+				fprintf(out, "\t\"job\":[\n");
+				printDetail(out, all);
+				fprintf(out, "\t]\n");
+
+				fprintf(out, "}\0");
+
+				free(outName);
+				free(name);
 				eventStart = aT;
 				eventEnd = quantumEnd;
 			}
@@ -509,17 +605,17 @@ int main(int argc, char *argv[])
 			else
 				break;
 		}
-		else 
+		else
 		{
 			// Haven't hit the event yet, continue as normal
 			quantumStart = T;
-			quantumEnd = T+Q;
+			quantumEnd = T + Q;
 			eventEnd = quantumEnd;
-			eventStart = quantumStart;	
+			eventStart = quantumStart;
 		}
 	}
 
-	if (running!=NULL)
+	if (running != NULL)
 	{
 		printf("Currently running\n");
 		printNode(running);
@@ -582,11 +678,11 @@ int min(int x, int y)
 	}
 	return y;
 }
-int max(int x,int y)
+int max(int x, int y)
 {
-	if (x>y)
+	if (x > y)
 	{
-		return x; 
+		return x;
 	}
 	return y;
 }

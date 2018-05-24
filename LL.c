@@ -349,10 +349,10 @@ void printJobIDs(FILE *out, struct LL *l){
     if (l){
 		for (n = l->head; n; n = n->next){
             if (n != l->tail){
-                fprintf(out,"%d,\n",n->jobID);
+                fprintf(out,"\t\t%d,\n",n->jobID);
             }
             else{
-                fprintf(out,"%d\n",n->jobID);
+                fprintf(out,"\t\t%d\n",n->jobID);
             }//else
 		} //FOR
 	}//IF

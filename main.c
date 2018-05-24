@@ -351,7 +351,7 @@ int main(int argc, char *argv[])
 					if (mem < memLeft)
 					{
 						// There is enough memory to run
-						pushFIFO(ready, id, aT, mem, dev, run, pri);
+						pushFIFO(ready, id, aT, mem, dev, run, pri,0,run,(-1),0,0);
 						memLeft -= mem;
 					}
 					else
@@ -359,15 +359,15 @@ int main(int argc, char *argv[])
 						// Not enough memory, put it on hold
 						if (pri == 1)
 						{
-							pushSJF(hQ1, id, aT, mem, dev, run, pri);
+							pushSJF(hQ1, id, aT, mem, dev, run, pri,0,run,(-1),0,0);
 						}
 						else
 						{
-							pushFIFO(hQ2, id, aT, mem, dev, run, pri);
+							pushFIFO(hQ2, id, aT, mem, dev, run, pri,0,run,(-1),0,0);
 						}
 					}
 					// Put it in list of all jobs
-					pushFIFO(all, id, aT, mem, dev, run, pri);
+					pushFIFO(all, id, aT, mem, dev, run, pri,0,run,(-1),0,0);
 				}
 				// Not the end of the quantum, continue processing
 				eventStart = aT;

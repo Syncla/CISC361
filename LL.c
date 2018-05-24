@@ -267,19 +267,22 @@ struct LL *list_new(void)
 	return l;
 } //LIST_NEW
 
-void cpyNode(struct node *n1, struct node *n2)
-{
-	n2->arrivalTime = n1->arrivalTime;
-	n2->devicesAssigned = n1->devicesAssigned;
+void cpyNode(struct node *n1, struct node *n2){
+    
 	n2->jobID = n1->jobID;
+    n2->arrivalTime = n1->arrivalTime;
 	n2->mainMemory = n1->mainMemory;
+    n2->serial = n1->serial;
+    n2->runTime = n1->runTime;
+    n2->priority = n1->priority;
+    n2->devicesAssigned = n1->devicesAssigned;
+    n2->timeLeft = n1->timeLeft;
+    n2->timeFinished = n1->timeFinished;
+    n2->complete = n1->complete;
+    n2->devicesRequested = n1->devicesRequested;
 	n2->next = n1->next;
 	n2->prev = n1->prev;
-	n2->priority = n1->priority;
-	n2->runTime = n1->runTime;
-	n2->serial = n1->serial;
-	n2->timeFinished = n1->timeFinished;
-	n2->timeLeft = n1->timeLeft;
+	
 }
 void printLL(const struct LL *l)
 {

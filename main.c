@@ -51,6 +51,8 @@ int debug = 0;
 int readLine(FILE *fp, char buff[255]);
 void clearBuff(char buff[255]);
 int min(int x, int y);
+int max(int x, int y);
+
 int aT = DEF;
 int id = DEF;
 int pri = DEF;
@@ -176,7 +178,7 @@ int main(int argc, char *argv[])
 
 	int quantumEnd = T + Q;
 	int quantumStart = T;
-
+	int processed = 0;
 	int workTime = Q;
 	//processLine(buff,&aT,&id,&pri,&mem,&dev,&run,&operation);
 	int status = OK;
@@ -195,153 +197,165 @@ int main(int argc, char *argv[])
 			status = readLine(inp, buff);
 			operation = processLine(buff, &aT, &id, &pri, &mem, &dev, &run, &operation);
 		}
-
 		if (aT < eventEnd)
 		{
-			printf("Event is occuring %d %d\n",aT,eventEnd);
 			eventEnd = aT;
-			// Interrupt the quantum
-			if (operation == 2 || operation == 3)
-			{	
-				quantumEnd = aT;
-			}
 		}	
 		// Work up until the event
 		workTime = eventEnd - eventStart;
 		
+		//printf("%d %d %d\n",eventStart,eventEnd,workTime);
 		// While you can work
-		while (workTime > 0)
+		if (running != NULL || ready->head !=NULL)
 		{
-			// if there is a job running
-			if (running != NULL)
+			
+			while (workTime > 0)
 			{
-				// TODO FINISH REMOVAL OF NODES IN QUEUES
-				// Have enough devices to run
-				if (running->devicesAssigned == running->serial)
+				// if there is a job running
+				if (running != NULL)
 				{
-					// Not enough time to finish
-					if (running->timeLeft > workTime)
+					// TODO FINISH REMOVAL OF NODES IN QUEUES
+					// Have enough devices to run
+					if (running->devicesAssigned == running->serial )
 					{
-						running->timeLeft -= workTime;
-						workTime = 0;
-						struct node * tmp = malloc(nodeSize);
-						cpyNode(tmp,running);
-						pushNodeFIFO(ready,running);
-						cpyNode(running,ready->head);
-						pop(ready);
-						free(tmp);
-					}
-					// job finished
-					else
-					{
-						printf("JOB: %d is done\n",running->jobID);
-						// compute leftover time
-						workTime -= running->timeLeft;
-						// Finish the job
-						running->timeLeft = 0;
-						running->complete = 1;
-						running->timeFinished = 10;
-						// deallocate resources
-						devLeft += running->devicesAssigned;
-						memLeft += running->mainMemory;
-						running->devicesAssigned = 0;
-						struct node * done = malloc(nodeSize);
-						cpyNode(done,running);
-						pushNodeFIFO(complete, done);
-						printNode(running);
-						
-						printNode(done);
-						free(done);
-						// If possible, transfer jobs to ready queue
-						// Check if a task in wait queue can be put in the ready queue
-						struct node *tmp = wait->head;
-						while (tmp != NULL)
+						// Not enough time to finish
+						if (running->timeLeft > workTime && running->complete==0)
 						{
-							if (tmp->devicesRequested <= devLeft)
+							running->timeLeft -= workTime;
+							
+							workTime = 0;
+							if (eventEnd == quantumEnd)
 							{
-								devLeft -= tmp->devicesRequested;
-								tmp->devicesAssigned += tmp->devicesRequested;
-								tmp->devicesRequested = 0;
-								pushNodeFIFO(ready, tmp);
-								int idToRemove = tmp->jobID;
-								tmp = tmp->next;
-								// TODO REMOVE TMP BY ID FROM WAIT
+								printf("Swapping job: %d with",running->jobID);
+								pushNodeFIFO(ready,running);
+								cpyNode(running,ready->head);
+								pop(ready);
+								printf(" %d\n",running->jobID);
 							}
-							else
-							{
-								tmp = tmp->next;
-							}
+							
 						}
-						// Check if a task in the hold queue can be put in the ready queue
-						// Check queue 1 first
-						tmp = hQ1->head;
-						while (tmp != NULL)
-						{
-							if (tmp->serial <= devLeft && tmp->mainMemory < memLeft)
-							{
-								pushNodeFIFO(ready, tmp);
-								int idToRemove = tmp->jobID;
-								tmp = tmp->next;
-								// TODO REMOVE TMP BY ID FROM hQ1
-							}
-							else
-							{
-								tmp = tmp->next;
-							}
-						}
-						tmp = hQ2->head;
-						while (tmp != NULL)
-						{
-							if (tmp->serial <= devLeft && tmp->mainMemory < memLeft)
-							{
-								pushNodeFIFO(ready, tmp);
-								int idToRemove = tmp->jobID;
-								tmp = tmp->next;
-								// TODO REMOVE TMP BY ID FROM hQ1
-							}
-							else
-							{
-								tmp = tmp->next;
-							}
-						}
-
-						// Grab the next job from the ready queue
-						if (ready->head != NULL)
-						{
-							cpyNode(running,ready->head);
-							pop(ready);
-						}
+						// job finished
 						else
 						{
+							//printf("JOB: %d is done\n",running->jobID);
+							// compute leftover time
+							T =  eventStart + running->timeLeft;
+							// New quantum
+							printf("Job finished on quantum %d to %d\n",quantumStart,T);
+							
+							quantumStart = T;
+							quantumEnd = T+Q;
+							//eventEnd = quantumEnd;
 							workTime = 0;
-							running == NULL;
-							pop(ready);
+							// Finish the job
+							running->timeFinished = eventStart + running->timeLeft;
+							//eventEnd = T+Q;
+							printf("Job finsihed at time : %d\n",running->timeFinished);
+							running->timeLeft = 0;
+							running->complete = 1;
+							// deallocate resources
+							devLeft += running->devicesAssigned;
+							memLeft += running->mainMemory;
+							running->devicesAssigned = 0;
+							pushNodeFIFO(complete, running);
+							
+							// If possible, transfer jobs to ready queue
+							// Check if a task in wait queue can be put in the ready queue
+							struct node *tmp = wait->head;
+							while (tmp != NULL)
+							{
+								if (tmp->devicesRequested <= devLeft)
+								{
+									devLeft -= tmp->devicesRequested;
+									tmp->devicesAssigned += tmp->devicesRequested;
+									tmp->devicesRequested = 0;
+									pushNodeFIFO(ready, tmp);
+									int idToRemove = tmp->jobID;
+									tmp = tmp->next;
+									// TODO REMOVE TMP BY ID FROM WAIT
+								}
+								else
+								{
+									tmp = tmp->next;
+								}
+							}
+							// Check if a task in the hold queue can be put in the ready queue
+							// Check queue 1 first
+							tmp = hQ1->head;
+							while (tmp != NULL)
+							{
+								if (tmp->serial <= devLeft && tmp->mainMemory < memLeft)
+								{
+									pushNodeFIFO(ready, tmp);
+									int idToRemove = tmp->jobID;
+									tmp = tmp->next;
+									// TODO REMOVE TMP BY ID FROM hQ1
+								}
+								else
+								{
+									tmp = tmp->next;
+								}
+							}
+							tmp = hQ2->head;
+							while (tmp != NULL)
+							{
+								if (tmp->serial <= devLeft && tmp->mainMemory < memLeft)
+								{
+									pushNodeFIFO(ready, tmp);
+									int idToRemove = tmp->jobID;
+									tmp = tmp->next;
+									// TODO REMOVE TMP BY ID FROM hQ1
+								}
+								else
+								{
+									tmp = tmp->next;
+								}
+							}
+
+							// Grab the next job from the ready queue
+							if (ready->head != NULL)
+							{
+								cpyNode(running,ready->head);
+								pop(ready);
+							}
+							else
+							{
+								
+								// Nothing on the queue
+								workTime = 0;
+								free(running);
+								running = NULL;
+							}
+							
+							workTime = 0;
 						}
 					}
-				}
-			}
-			else
-			{
-				// No job is running, grab head of ready
-				if (ready->head != NULL)
-				{
-					running = malloc(nodeSize);
-					cpyNode(running,ready->head);
-					pop(ready);
 				}
 				else
 				{
-					// Nothing to do, continue
-					workTime = 0;
+					
+					// No job is running, grab head of ready
+					if (ready->head != NULL)
+					{
+						running = malloc(nodeSize);
+						cpyNode(running,ready->head);
+						pop(ready);
+					}
+					else
+					{
+						// Nothing to do, continue
+						workTime = 0;
+					}
 				}
 			}
 		}
+		
 		// Update the time
-		T = eventEnd;
+		
+		T = min(quantumEnd,eventEnd);
 		// Hit the event
 		if (aT == T)
 		{
-			
 			// new job
 			if (operation == 1)
 			{
@@ -352,6 +366,7 @@ int main(int argc, char *argv[])
 					{
 						// There is enough memory to run
 						pushFIFO(ready, id, aT, mem, dev, run, pri,0,run,(-1),0,0);
+						
 						memLeft -= mem;
 					}
 					else
@@ -368,10 +383,20 @@ int main(int argc, char *argv[])
 					}
 					// Put it in list of all jobs
 					pushFIFO(all, id, aT, mem, dev, run, pri,0,run,(-1),0,0);
+					if (running == NULL)
+					{
+						// Nothing was running, start a new quantum
+						quantumStart = aT;
+						quantumEnd = aT + Q;
+						eventEnd = quantumEnd;
+						eventStart = aT;
+					}
 				}
+				
 				// Not the end of the quantum, continue processing
 				eventStart = aT;
 				eventEnd = quantumEnd;
+				
 			}
 			// Request for device
 			else if (operation == 2)
@@ -470,6 +495,7 @@ int main(int argc, char *argv[])
 			{
 				//printf("What are you going to do?\n");
 				// Not the end of the quantum, continue processing
+				printf("%d\n",T);
 				eventStart = aT;
 				eventEnd = quantumEnd;
 			}
@@ -477,174 +503,31 @@ int main(int argc, char *argv[])
 			status = readLine(inp, buff);
 			// If EOF
 			if (status != EOFREACHED)
+			{
 				operation = processLine(buff, &aT, &id, &pri, &mem, &dev, &run, &operation);
+			}
 			else
 				break;
 		}
-		else
+		else 
 		{
-			printf("On quantum %d to %d\n",eventStart,T);
 			// Haven't hit the event yet, continue as normal
 			quantumStart = T;
 			quantumEnd = T+Q;
 			eventEnd = quantumEnd;
-			eventStart = quantumStart;
-			
+			eventStart = quantumStart;	
 		}
-
-		
-		
 	}
 
-	/*
-// Job creation
-				
-				*/
-	/*
-		FILE *out;
-		char *name = malloc(sizeof(char) * (strlen(filename) - 3));
-		char *outName = malloc(sizeof(char) * (strlen(name) + 4));
-		strncpy(name, filename, strlen(filename) - 3);
-		name[strlen(name) - 1] = '\0';
-		snprintf(outName, strlen(name) + 15, "%s_D%d.json", name, aT);
-		out = fopen(outName, "w");
-		fprintf(out, "{\n");
-		fprintf(out, "\t\"current_time\":%d,\n", T);
-		fprintf(out, "\t\"total_memory\":%d,\n", M);
-		fprintf(out, "\t\"available_memory\":%d,\n", M - M);
-		fprintf(out, "\t\"total_devices\":%d,\n", S);
-		fprintf(out, "\t\"available_devices\":%d,\n", S - S);
-		fprintf(out, "\t\"quantum\":%d\n", Q);
-		fprintf(out, "}\0");
-		fclose(out);
-		free(outName);
-		free(name);
-		switch (operation)
-			{
-				// Job creation
-				case 1:
-						if (mem < M && dev < S)
-						{
-
-							if (mem < memLeft)
-							{
-								// There is enough memory to run
-								pushFIFO(ready, id, aT, mem, dev, run, pri);
-								memLeft -= mem;
-							}
-							else
-							{
-								// Not enough memory, put it on hold
-								if (pri == 1)
-								{
-									pushSJF(hQ1, id, aT, mem, dev, run, pri);
-								}
-								else
-								{
-									pushFIFO(hQ2, id, aT, mem, dev, run, pri);
-								}
-							}
-							// Put it in list of all jobs
-							pushFIFO(all, id, aT, mem, dev, run, pri);
-						}
-						break;
-				// Request for device
-				case 2:
-						if (id == running->jobID)
-						{
-							if (running->devicesAssigned + dev < running->serial)
-							{
-								// Assign devices to running process
-								running->devicesAssigned += dev;
-								devLeft -= dev;
-								// Move running process to end of ready queue
-								struct node *newRunning;
-								pushNodeFIFO(ready, running);
-								// Pop of top of ready queue to put on running
-								cpyNode(newRunning, ready->head);
-								pop(ready);
-								cpyNode(running, newRunning);
-							}
-							else
-							{
-								// Not enough devices left, put on device queue
-								struct node *newRunning;
-								pushNodeFIFO(wait, running);
-								// Pop of top of ready queue to put on running
-								cpyNode(newRunning, ready->head);
-								pop(ready);
-								cpyNode(running, newRunning);
-							}
-						}
-						break;
-				// Release device
-				case 3:
-						if (id == running->jobID)
-						{
-							if (running->devicesAssigned - dev > 0)
-							{
-								// Assign devices to running process
-								running->devicesAssigned -= dev;
-								devLeft += dev;
-								// Move running process to end of ready queue
-								struct node *newRunning;
-								pushNodeFIFO(ready, running);
-								// Pop of top of ready queue to put on running
-								cpyNode(newRunning, ready->head);
-								pop(ready);
-								cpyNode(running, newRunning);
-								int max = wait->size;
-								int c = 0;
-								while (wait->head && c < max)
-								{
-									// Pop off devices on wait queue if possible
-									struct node *tmp;
-									cpyNode(tmp, wait->head);
-									pop(wait);
-									// if (needed - assigned - available < 0), put on ready
-									if (tmp->serial - tmp->devicesAssigned - devLeft)
-									{
-										pushNodeFIFO(ready, tmp);
-									}
-									else
-									{
-										// Put it back on wait queue
-										pushNodeFIFO(wait, tmp);
-										// avoid double counting
-										c++;
-										// if c>max, that means that we have scanned all the items on the wait queue
-									}
-								}
-							}
-							else
-							{
-								// Not enough devices to unassing, put on wait
-								struct node *newRunning;
-								pushNodeFIFO(wait, running);
-								// Pop of top of ready queue to put on running
-								cpyNode(newRunning, ready->head);
-								pop(ready);
-								cpyNode(running, newRunning);
-							}
-						}
-						break;
-				// Print out list
-				case 4:
-					printf("ready: \n");
-					printLL(ready);
-					printf("wait: \n");
-					printLL(wait);
-					printf("hQ1: \n");
-					printLL(hQ1);
-					printf("hQ2: \n");
-					printLL(hQ2);
-					printf("complete: \n");
-					printLL(complete);
-					break;
-			
-			}
-		*/
-
+	if (running!=NULL)
+	{
+		printf("Currently running\n");
+		printNode(running);
+	}
+	else
+	{
+		printf("Not running anything\n");
+	}
 	printf("ready: \n");
 	printLL(ready);
 	printf("wait: \n");
@@ -696,6 +579,14 @@ int min(int x, int y)
 	if (x < y)
 	{
 		return x;
+	}
+	return y;
+}
+int max(int x,int y)
+{
+	if (x>y)
+	{
+		return x; 
 	}
 	return y;
 }

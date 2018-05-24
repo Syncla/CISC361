@@ -270,7 +270,7 @@ struct LL *list_new(void)
 	return l;
 } //LIST_NEW
 
-void cpyNode(struct node *n1, struct node *n2){
+void cpyNode(struct node *n2, struct node *n1){
     
 	n2->jobID = n1->jobID;
     n2->arrivalTime = n1->arrivalTime;

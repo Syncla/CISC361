@@ -52,14 +52,9 @@ int main(void){
     printLL(myListFIFO);
     popByID(myListFIFO,5);    
     printLL(myListFIFO);
-    
-<<<<<<< HEAD
-    return 0;
-=======
-fclose(otter);
 
 return 0;
->>>>>>> 0b5051b5237bb4a9da184b5e3af20a9b8fb12484
+
 }//main
 */
 
@@ -70,7 +65,7 @@ struct LL *pushSJF(struct LL *l, const int id, const int at, const int mm, const
 
 	if (n == NULL)
 	{
-		fprintf(stderr, "IN %s, %s: malloc() failed\n", __FILE__, "list_add");
+		//fprintf(stderr, "IN %s, %s: malloc() failed\n", __FILE__, "list_add");
 		return l;
 	} //IF
 
@@ -87,7 +82,7 @@ struct LL *pushSJF(struct LL *l, const int id, const int at, const int mm, const
 	n->complete=0;
 	if (l == NULL)
 	{
-		printf("Queue not initialized\n");
+		//printf("Queue not initialized\n");
 		free(n);
 		return l;
 	} //IF
@@ -101,7 +96,7 @@ struct LL *pushSJF(struct LL *l, const int id, const int at, const int mm, const
 
 	else if (NULL == l->head || NULL == l->tail)
 	{
-		fprintf(stderr, "There is something seriously wrong with your assignment of head/tail to the list\n");
+		fprintf(stderr, "ERROR: Something wrong with your assignment of head/tail to the list\n");
 		free(n);
 		return NULL;
 	} //ELSE IF
@@ -161,7 +156,7 @@ struct LL *pushFIFO(struct LL *l, const int id, const int at, const int mm, cons
 
 	if (n == NULL)
 	{
-		fprintf(stderr, "IN %s, %s: malloc() failed\n", __FILE__, "list_add");
+		//fprintf(stderr, "IN %s, %s: malloc() failed\n", __FILE__, "list_add");
 		return l;
 	} //IF
 
@@ -180,7 +175,7 @@ struct LL *pushFIFO(struct LL *l, const int id, const int at, const int mm, cons
 
 	if (l == NULL)
 	{
-		printf("Queue not initialized\n");
+		//printf("Queue not initialized\n");
 		free(n);
 		return l;
 	} //IF
@@ -193,7 +188,7 @@ struct LL *pushFIFO(struct LL *l, const int id, const int at, const int mm, cons
 
 	else if (NULL == l->head || NULL == l->tail)
 	{
-		fprintf(stderr, "There is something seriously wrong with your assignment of head/tail to the list\n");
+		fprintf(stderr, "ERROR: Something wrong with your assignment of head/tail to the list\n");
 		free(n);
 		return NULL;
 	} //ELSE IF
@@ -233,8 +228,8 @@ struct LL *pop(struct LL *l)
 
 	else if (NULL == l->head || NULL == l->tail)
 	{
-		printf("There is something seriously wrong with your list\n");
-		printf("One of the head/tail is empty while other is not \n");
+		printf("ERROR: Something wrong with your assignment of head/tail to the list\n");
+		
 		return l;
 	}
 
@@ -264,7 +259,7 @@ struct LL *list_new(void)
 	
 	if (NULL == l)
 	{
-		fprintf(stderr, "LINE: %d, malloc() failed\n", __LINE__);
+		//fprintf(stderr, "LINE: %d, malloc() failed\n", __LINE__);
 	} //IF
 
 	l->head = l->tail = NULL;

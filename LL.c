@@ -146,7 +146,7 @@ struct LL *pushSJF(struct LL *l, const int id, const int at, const int mm, const
 
 struct LL *pushNodeSJF(struct LL *l, struct node *n){
     
-	return pushSJF(l,n->jobID,n->arrivalTime,n->mainMemory,n->serial,n->runTime,n->priority);
+	 return pushSJF(l,n->jobID,n->arrivalTime,n->mainMemory,n->serial,n->runTime,n->priority,n->devicesAssigned,n->timeLeft,n->timeFinished,n->complete,n->devicesRequested);
     
 } //ADDS NODE TO THE LIST
 
@@ -205,7 +205,7 @@ struct LL *pushFIFO(struct LL *l, const int id, const int at, const int mm, cons
 } //PUSHFIFO
 
 struct LL *pushNodeFIFO(struct LL *l, struct node *n){
-    return pushFIFO(l,n->jobID,n->arrivalTime,n->mainMemory,n->serial,n->runTime,n->priority);
+    return pushFIFO(l,n->jobID,n->arrivalTime,n->mainMemory,n->serial,n->runTime,n->priority,n->devicesAssigned,n->timeLeft,n->timeFinished,n->complete,n->devicesRequested);
 }//pushNodeFIFO
 
 

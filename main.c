@@ -28,6 +28,9 @@
 // Function codes
 #define OK 1		 // Function succeded
 #define EOFREACHED 0 // Function failed
+// Booleans
+#define true 1
+#define false 0
 
 // CONSTANT VARIABLE DECLARATIONS
 #define buffSize 255 // Buffer to hold each readline
@@ -177,84 +180,40 @@ int main(int argc, char *argv[])
 	int workTime = Q;
 	//processLine(buff,&aT,&id,&pri,&mem,&dev,&run,&operation);
 	int status = OK;
+	eventEnd = T + Q;
+	eventStart = T;
+	quantumStart = T;
+	quantumEnd = T + Q;
 	// Process Events
-	while (1)
+	while (true)
 	{
-		
-		eventEnd = T + Q;
-		eventStart = T;
+
 		// First line has special case
 		if (aT == DEF)
 		{
+			printf("Starting\n");
 			status = readLine(inp, buff);
 			operation = processLine(buff, &aT, &id, &pri, &mem, &dev, &run, &operation);
 		}
-		
-		if (operation == 2 || operation == 3)
-		{
-			if (aT < eventEnd)
-			{
-				eventEnd = aT;
-			}
-		}
-		else if (operation == 1)
-		{
-			
-			if (mem < M && dev < S)
-			{
 
-				if (mem < memLeft)
-				{
-					if (ready->head != NULL)
-					{
-						// If there is nothing running, change when to start
-						eventStart = aT;
-					}
-					// There is enough memory to run
-					pushFIFO(ready, id, aT, mem, dev, run, pri);
-					memLeft -= mem;
-					
-				}
-				else
-				{
-					// Not enough memory, put it on hold
-					if (pri == 1)
-					{
-						pushSJF(hQ1, id, aT, mem, dev, run, pri);
-					}
-					else
-					{
-						pushFIFO(hQ2, id, aT, mem, dev, run, pri);
-					}
-				}
-				// Put it in list of all jobs
-				pushFIFO(all, id, aT, mem, dev, run, pri);
-			}
-		}
-		else if (operation == 5)
+		if (aT < eventEnd)
 		{
-			
-			printf("aT: %d\n",aT);
-			printf("ready: \n");
-			printLL(ready);
-			printf("wait: \n");
-			printLL(wait);
-			printf("hQ1: \n");
-			printLL(hQ1);
-			printf("hQ2: \n");
-			printLL(hQ2);
-			printf("complete: \n");
-			printLL(complete);
-			printf("all \n");
-			printLL(all);
-			printf("\n");
-		}
+			printf("Event is occuring %d %d\n",aT,eventEnd);
+			eventEnd = aT;
+			// Interrupt the quantum
+			if (operation == 2 || operation == 3)
+			{	
+				quantumEnd = aT;
+			}
+		}	
+		// Work up until the event
 		workTime = eventEnd - eventStart;
+		
 		// While you can work
 		while (workTime > 0)
 		{
 			// if there is a job running
-			if (running)
+			if (running != NULL)
 			{
 				// TODO FINISH REMOVAL OF NODES IN QUEUES
 				// Have enough devices to run
@@ -265,13 +224,19 @@ int main(int argc, char *argv[])
 					{
 						running->timeLeft -= workTime;
 						workTime = 0;
+						struct node * tmp = malloc(nodeSize);
+						cpyNode(tmp,running);
+						pushNodeFIFO(ready,running);
+						cpyNode(running,ready->head);
+						pop(ready);
+						free(tmp);
 					}
 					// job finished
 					else
 					{
+						printf("JOB: %d is done\n",running->jobID);
 						// compute leftover time
 						workTime -= running->timeLeft;
-						printf("%d\n",workTime);
 						// Finish the job
 						running->timeLeft = 0;
 						running->complete = 1;
@@ -280,9 +245,13 @@ int main(int argc, char *argv[])
 						devLeft += running->devicesAssigned;
 						memLeft += running->mainMemory;
 						running->devicesAssigned = 0;
-						pushNodeFIFO(complete, running);
-						complete->tail->timeFinished = eventEnd-workTime;
-						printNode(complete->tail);
+						struct node * done = malloc(nodeSize);
+						cpyNode(done,running);
+						pushNodeFIFO(complete, done);
+						printNode(running);
+						
+						printNode(done);
+						free(done);
 						// If possible, transfer jobs to ready queue
 						// Check if a task in wait queue can be put in the ready queue
 						struct node *tmp = wait->head;
@@ -337,32 +306,194 @@ int main(int argc, char *argv[])
 						}
 
 						// Grab the next job from the ready queue
-						running = ready->head;
-						pop(ready);
+						if (ready->head != NULL)
+						{
+							cpyNode(running,ready->head);
+							pop(ready);
+						}
+						else
+						{
+							workTime = 0;
+							running == NULL;
+							pop(ready);
+						}
 					}
 				}
 			}
 			else
 			{
 				// No job is running, grab head of ready
-				running = ready->head;
-				pop(ready);
-				if (running == NULL)
+				if (ready->head != NULL)
 				{
-					// Nothing to run
-					// TODO, Should we check other queues here?
+					running = malloc(nodeSize);
+					cpyNode(running,ready->head);
+					pop(ready);
+				}
+				else
+				{
+					// Nothing to do, continue
 					workTime = 0;
 				}
 			}
 		}
-	
-		status = readLine(inp, buff);
-		printf("%s\n",buff);
-		if (status)
-			operation = processLine(buff, &aT, &id, &pri, &mem, &dev, &run, &operation);
-		else
-			break;
+		// Update the time
 		T = eventEnd;
+		// Hit the event
+		if (aT == T)
+		{
+			
+			// new job
+			if (operation == 1)
+			{
+				if (mem < M && dev < S)
+				{
+
+					if (mem < memLeft)
+					{
+						// There is enough memory to run
+						pushFIFO(ready, id, aT, mem, dev, run, pri);
+						memLeft -= mem;
+					}
+					else
+					{
+						// Not enough memory, put it on hold
+						if (pri == 1)
+						{
+							pushSJF(hQ1, id, aT, mem, dev, run, pri);
+						}
+						else
+						{
+							pushFIFO(hQ2, id, aT, mem, dev, run, pri);
+						}
+					}
+					// Put it in list of all jobs
+					pushFIFO(all, id, aT, mem, dev, run, pri);
+				}
+				// Not the end of the quantum, continue processing
+				eventStart = aT;
+				eventEnd = quantumEnd;
+			}
+			// Request for device
+			else if (operation == 2)
+			{
+				if (id == running->jobID)
+					{
+						if (running->devicesAssigned + dev < running->serial)
+						{
+							// Assign devices to running process
+							running->devicesAssigned += dev;
+							devLeft -= dev;
+							// Move running process to end of ready queue
+							struct node *newRunning;
+							pushNodeFIFO(ready, running);
+							// Pop of top of ready queue to put on running
+							cpyNode(newRunning, ready->head);
+							pop(ready);
+							cpyNode(running, newRunning);
+						}
+						else
+						{
+							// Not enough devices left, put on device queue
+							struct node *newRunning;
+							pushNodeFIFO(wait, running);
+							// Pop of top of ready queue to put on running
+							cpyNode(newRunning, ready->head);
+							pop(ready);
+							cpyNode(running, newRunning);
+						}
+				}
+				// Interrupt, new quantum
+				quantumStart = T;
+				quantumEnd = T+Q;
+				eventStart = T;
+				eventEnd = T+Q;
+			}
+			// Release for device
+			else if (operation == 3)
+			{
+				if (id == running->jobID)
+				{
+					if (running->devicesAssigned - dev > 0)
+					{
+						// Assign devices to running process
+						running->devicesAssigned -= dev;
+						devLeft += dev;
+						// Move running process to end of ready queue
+						struct node *newRunning;
+						pushNodeFIFO(ready, running);
+						// Pop of top of ready queue to put on running
+						cpyNode(newRunning, ready->head);
+						pop(ready);
+						cpyNode(running, newRunning);
+						int max = wait->size;
+						int c = 0;
+						while (wait->head && c < max)
+						{
+							// Pop off devices on wait queue if possible
+							struct node *tmp;
+							cpyNode(tmp, wait->head);
+							pop(wait);
+							// if (needed - assigned - available < 0), put on ready
+							if (tmp->serial - tmp->devicesAssigned - devLeft)
+							{
+								pushNodeFIFO(ready, tmp);
+							}
+							else
+							{
+								// Put it back on wait queue
+								pushNodeFIFO(wait, tmp);
+								// avoid double counting
+								c++;
+								// if c>max, that means that we have scanned all the items on the wait queue
+							}
+						}
+					}
+					else
+					{
+						// Not enough devices to unassing, put on wait
+						struct node *newRunning;
+						pushNodeFIFO(wait, running);
+						// Pop of top of ready queue to put on running
+						cpyNode(newRunning, ready->head);
+						pop(ready);
+						cpyNode(running, newRunning);
+					}
+				}
+				// Interrupt, new quantum
+				quantumStart = T;
+				quantumEnd = T+Q;
+				eventStart = T;
+				eventEnd = T+Q;
+			}
+			// Display
+			else if (operation == 4)
+			{
+				//printf("What are you going to do?\n");
+				// Not the end of the quantum, continue processing
+				eventStart = aT;
+				eventEnd = quantumEnd;
+			}
+			// Read new line to get the next event
+			status = readLine(inp, buff);
+			// If EOF
+			if (status != EOFREACHED)
+				operation = processLine(buff, &aT, &id, &pri, &mem, &dev, &run, &operation);
+			else
+				break;
+		}
+		else
+		{
+			printf("On quantum %d to %d\n",eventStart,T);
+			// Haven't hit the event yet, continue as normal
+			quantumStart = T;
+			quantumEnd = T+Q;
+			eventEnd = quantumEnd;
+			eventStart = quantumStart;
+			
+		}
+
+		
+		
 	}
 
 	/*

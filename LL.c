@@ -59,7 +59,7 @@ return 0;
 */
 
 //FUNCTIONS DEFINITIONS
-struct LL *pushSJF(struct LL *l, const int id, const int at, const int mm, const int ser, const int rt, const int pri)
+struct LL *pushSJF(struct LL * l,const int id,const int at ,const int mm,const int ser,const int rt,const int pri,const int devicesAssigned,const int timeLeft,const int timeFinished,const int complete,const int devicesRequested)
 {
 	struct node *n = malloc(1 * sizeof(*n));
 
@@ -75,11 +75,13 @@ struct LL *pushSJF(struct LL *l, const int id, const int at, const int mm, const
 	n->serial = ser;
 	n->runTime = rt;
 	n->priority = pri;
-	n->devicesAssigned = 0;
-	n->timeLeft = rt;
-	n->timeFinished=-1;
+	n->devicesAssigned = devicesAssigned;
+	n->devicesRequested = devicesRequested;
+	n->timeLeft = timeLeft;
+	n->timeFinished = timeFinished;
+	n->complete = complete;
 	n->next = NULL;
-	n->complete=0;
+	n->prev = NULL;
 	if (l == NULL)
 	{
 		//printf("Queue not initialized\n");
@@ -150,7 +152,7 @@ struct LL *pushNodeSJF(struct LL *l, struct node *n){
     
 } //ADDS NODE TO THE LIST
 
-struct LL *pushFIFO(struct LL *l, const int id, const int at, const int mm, const int ser, const int rt, const int pri)
+struct LL *pushFIFO(struct LL * l,const int id,const int at ,const int mm,const int ser,const int rt,const int pri,const int devicesAssigned,const int timeLeft,const int timeFinished,const int complete,const int devicesRequested)
 {
 	struct node *n = malloc(1 * sizeof(*n));
 
@@ -166,12 +168,13 @@ struct LL *pushFIFO(struct LL *l, const int id, const int at, const int mm, cons
 	n->serial = ser;
 	n->runTime = rt;
 	n->priority = pri;
-	n->devicesAssigned = 0;
-	n->timeLeft = rt;
-	n->timeFinished=-1;
+	n->devicesAssigned = devicesAssigned;
+	n->devicesRequested = devicesRequested;
+	n->timeLeft = timeLeft;
+	n->timeFinished = timeFinished;
+	n->complete = complete;
 	n->next = NULL;
 	n->prev = NULL;
-	n->complete=0;
 
 	if (l == NULL)
 	{

@@ -225,11 +225,11 @@ int main(int argc, char *argv[])
 							workTime = 0;
 							if (eventEnd == quantumEnd)
 							{
-								printf("Swapping job: %d with", running->jobID);
+								//printf("Swapping job: %d with", running->jobID);
 								pushNodeFIFO(ready, running);
 								cpyNode(running, ready->head);
 								pop(ready);
-								printf(" %d\n", running->jobID);
+								//printf(" %d\n", running->jobID);
 							}
 						}
 						// job finished

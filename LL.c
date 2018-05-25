@@ -1,3 +1,5 @@
+//Vinay Vazir & Jason Reynolds
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -425,8 +427,12 @@ struct LL *popByID(struct LL *l,int id){
     return l;
 }//popbyID
 
-double getAVGTurnaround(struct LL* l){    
-    int sum = 0;
+double getAVGTurnaround(struct LL* l){
+    if ( l == NULL){
+        return 0.0;
+    }
+    
+    int sum;
     int numNodes = 0;
     if(l){
         for (struct node * n=l->head;n;n=n->next){

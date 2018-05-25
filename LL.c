@@ -427,7 +427,7 @@ struct LL *popByID(struct LL *l,int id){
 
 double getAVGTurnaround(struct LL* l){
     if ( l == NULL){
-        return NULL;
+        return 0.0;
     }
     
     int sum;

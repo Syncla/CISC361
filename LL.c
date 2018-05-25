@@ -424,3 +424,16 @@ struct LL *popByID(struct LL *l,int id){
     
     return l;
 }//popbyID
+
+double getAVGTurnaround(struct LL* l){
+    int sum;
+    int numNodes = 0;
+    if(l){
+        for (struct node * n=l->head;n;n=n->next){
+            sum += n->timeFinished-n->arrivalTime;
+            numNodes++;
+        }//for
+    }//IF
+    
+    return (sum/numNodes);
+}//getAVGTurnaround

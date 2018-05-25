@@ -55,4 +55,6 @@ void printDetail(FILE * ,struct LL *);
 
 struct LL *popByID(struct LL *,int); //REMOVES FIRST IN 
 
+double getAVGTurnaround(struct LL*);
+
 #endif

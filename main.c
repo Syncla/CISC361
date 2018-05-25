@@ -246,8 +246,8 @@ int main(int argc, char *argv[])
 							// New quantum
 							printf("Job:%d finished on quantum %d to %d\n", running->jobID,quantumStart, T);
 
-							quantumStart = T;
-							quantumEnd = T + Q;
+							//quantumStart = T;
+							quantumEnd = T;
 							//eventEnd = quantumEnd;
 							workTime = 0;
 							// Finish the job
@@ -279,6 +279,7 @@ int main(int argc, char *argv[])
 									int idToRemove = tmp->jobID;
 									tmp = tmp->next;
 									// TODO REMOVE TMP BY ID FROM WAIT
+                                    popByID(wait,idToRemove);
 								}
 								else
 								{
@@ -296,6 +297,7 @@ int main(int argc, char *argv[])
 									int idToRemove = tmp->jobID;
 									tmp = tmp->next;
 									// TODO REMOVE TMP BY ID FROM hQ1
+                                    popByID(hQ1,idToRemove);
 								}
 								else
 								{
@@ -311,6 +313,7 @@ int main(int argc, char *argv[])
 									int idToRemove = tmp->jobID;
 									tmp = tmp->next;
 									// TODO REMOVE TMP BY ID FROM hQ1
+                                    popByID(hQ1,idToRemove);
 								}
 								else
 								{

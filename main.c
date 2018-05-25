@@ -3,9 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
-// Threading includes
-#include <unistd.h>
-#include <pthread.h>
 
 // Custom includes
 #include "LL.c"
@@ -345,6 +342,7 @@ int main(int argc, char *argv[])
 					{
 						// Does not have any devices to work with
 						workTime = 0;
+						printf("Process %d waiting for deviecs from quantum %d to %d\n",running->jobID,quantumStart,quantumEnd);
 					}
 				}
 				else
@@ -418,10 +416,10 @@ int main(int argc, char *argv[])
 			// Request for device
 			else if (operation == 2)
 			{
-
+				
 				if (id == running->jobID)
 				{
-					if (running->devicesAssigned + dev < running->serial)
+					if (running->devicesAssigned + dev <= running->serial)
 					{
 						// Assign devices to running process
 						running->devicesAssigned += dev;
@@ -471,7 +469,7 @@ int main(int argc, char *argv[])
 						// Move running process to end of ready queue
 						pushNodeFIFO(ready, running);
 						// Pop of top of ready queue to put on running
-						printf("here\n");
+						//printf("here\n");
 						if (ready->head != NULL)
 						{
 							cpyNode(running, ready->head);
@@ -485,7 +483,7 @@ int main(int argc, char *argv[])
 						int max = wait->size;
 						int c = 0;
 						struct node *tmp = malloc(nodeSize);
-						printf("here\n");
+						//printf("here\n");
 						while (wait->head && c < max)
 						{
 							// Pop off devices on wait queue if possible
@@ -532,7 +530,7 @@ int main(int argc, char *argv[])
 				quantumEnd = T + Q;
 				eventStart = T;
 				eventEnd = T + Q;
-				printf("Here\n");
+				//printf("Here\n");
 			}
 			// Display
 			else if (operation == 4)

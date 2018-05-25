@@ -225,7 +225,6 @@ int main(int argc, char *argv[])
 						if (running->timeLeft > workTime && running->complete == 0)
 						{
 							running->timeLeft -= workTime;
-
 							workTime = 0;
 							if (eventEnd == quantumEnd)
 							{
@@ -237,22 +236,23 @@ int main(int argc, char *argv[])
 							}
 						}
 						// job finished
-						else
+						else if (running->timeLeft <= workTime && running->complete == 0)
 						{
 							//printf("JOB: %d is done\n",running->jobID);
 							// compute leftover time
-							T = eventStart + running->timeLeft;
 							// New quantum
 							printf("Job finished on quantum %d to %d\n", quantumStart, T);
-
-							quantumStart = T;
-							quantumEnd = T + Q;
+							printf("%d %d\n",T,running->timeLeft);
+							T = eventStart + running->timeLeft;
+							//quantumStart = T;
+							quantumEnd = T;
+							printf("%d %d %d %d %d\n",running->jobID,quantumStart,quantumEnd,eventStart,eventEnd);
 							//eventEnd = quantumEnd;
 							workTime = 0;
 							// Finish the job
 							running->timeFinished = eventStart + running->timeLeft;
 							//eventEnd = T+Q;
-							printf("Job finsihed at time : %d\n", running->timeFinished);
+							printf("Job finished at time : %d\n", running->timeFinished);
 							running->timeLeft = 0;
 							running->complete = 1;
 							// deallocate resources
@@ -313,7 +313,11 @@ int main(int argc, char *argv[])
 									tmp = tmp->next;
 								}
 							}
-
+							// Free running
+							
+							free(running);
+							running = NULL;
+							/*
 							// Grab the next job from the ready queue
 							if (ready->head != NULL)
 							{
@@ -322,15 +326,16 @@ int main(int argc, char *argv[])
 							}
 							else
 							{
-
 								// Nothing on the queue
 								workTime = 0;
 								free(running);
 								running = NULL;
 							}
-
+							*/
 							workTime = 0;
 						}
+						if (running)
+							printf("%d\n",running->timeLeft);
 					}
 					else
 					{
@@ -358,7 +363,7 @@ int main(int argc, char *argv[])
 		}
 
 		// Update the time
-
+		//printf("here %d %d\n",quantumEnd,eventEnd);
 		T = min(quantumEnd, eventEnd);
 
 		// Hit the event

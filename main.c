@@ -8,7 +8,7 @@
 #include <pthread.h>
 
 // Custom includes
-#include "LL.h"
+#include "LL.c"
 
 // COLOR DEFINITIONS
 #define KNRM "\x1B[0m"
@@ -217,6 +217,7 @@ int main(int argc, char *argv[])
 				// if there is a job running
 				if (running != NULL)
 				{
+                    printf("at:%d, T:%d\n",aT,T);
 					// TODO FINISH REMOVAL OF NODES IN QUEUES
 					// Have enough devices to run
 					if (running->devicesAssigned == running->serial)
@@ -243,7 +244,7 @@ int main(int argc, char *argv[])
 							// compute leftover time
 							T = eventStart + running->timeLeft;
 							// New quantum
-							printf("Job finished on quantum %d to %d\n", quantumStart, T);
+							printf("Job:%d finished on quantum %d to %d\n", running->jobID,quantumStart, T);
 
 							quantumStart = T;
 							quantumEnd = T + Q;
@@ -252,7 +253,10 @@ int main(int argc, char *argv[])
 							// Finish the job
 							running->timeFinished = eventStart + running->timeLeft;
 							//eventEnd = T+Q;
-							printf("Job finsihed at time : %d\n", running->timeFinished);
+							printf("Job:%d finished at time : %d\n",running->jobID, running->timeFinished);
+                            
+                            printf("T:%d\n",T);
+                            
 							running->timeLeft = 0;
 							running->complete = 1;
 							// deallocate resources
@@ -358,7 +362,7 @@ int main(int argc, char *argv[])
 		}
 
 		// Update the time
-
+        printf("quantumEnd:%d, eventEnd:%d\n",quantumEnd,eventEnd);
 		T = min(quantumEnd, eventEnd);
 
 		// Hit the event
@@ -550,9 +554,15 @@ int main(int argc, char *argv[])
 				fprintf(out, "\t\"total_devices\":%d,\n", S);
 				fprintf(out, "\t\"available_devices\":%d,\n", devavai);
 				fprintf(out, "\t\"quantum\":%d,\n", Q);
-				fprintf(out, "\t\"turnaround\":%d,\n", turn);
-				fprintf(out, "\t\"weighted_turnaround\":%d,\n", turn);
-				fprintf(out, "\t\"readyq\":[\n");
+//				fprintf(out, "\t\"turnaround\":%d,\n", turn);
+//				fprintf(out, "\t\"weighted_turnaround\":%d,\n", turn);
+
+				fprintf(out, "\t\"turnaround\":%f,\n", turn);               //changed this since turn is a float
+				fprintf(out, "\t\"weighted_turnaround\":%f,\n", turn);      //changed this since turn is a float
+                
+                
+                
+                fprintf(out, "\t\"readyq\":[\n");
 				printJobIDs(out, ready);
 				fprintf(out, "\t],\n");
 				fprintf(out, "\t\"running\":");
@@ -588,7 +598,7 @@ int main(int argc, char *argv[])
 				printDetail(out, all);
 				fprintf(out, "\t]\n");
 
-				fprintf(out, "}\0");
+				fprintf(out, "}");                      //fprintf(out, "}\0");
 
 				free(outName);
 				free(name);

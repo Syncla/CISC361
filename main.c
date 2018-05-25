@@ -214,7 +214,7 @@ int main(int argc, char *argv[])
 				// if there is a job running
 				if (running != NULL)
 				{
-                    printf("at:%d, T:%d\n",aT,T);
+					printf("at:%d, T:%d\n", aT, T);
 					// TODO FINISH REMOVAL OF NODES IN QUEUES
 					// Have enough devices to run
 					if (running->devicesAssigned == running->serial)
@@ -240,11 +240,11 @@ int main(int argc, char *argv[])
 							// compute leftover time
 							// New quantum
 							printf("Job finished on quantum %d to %d\n", quantumStart, T);
-							printf("%d %d\n",T,running->timeLeft);
+							printf("%d %d\n", T, running->timeLeft);
 							T = eventStart + running->timeLeft;
 							//quantumStart = T;
 							quantumEnd = T;
-							printf("%d %d %d %d %d\n",running->jobID,quantumStart,quantumEnd,eventStart,eventEnd);
+							printf("%d %d %d %d %d\n", running->jobID, quantumStart, quantumEnd, eventStart, eventEnd);
 							//eventEnd = quantumEnd;
 							workTime = 0;
 							// Finish the job
@@ -273,7 +273,7 @@ int main(int argc, char *argv[])
 									int idToRemove = tmp->jobID;
 									tmp = tmp->next;
 									// TODO REMOVE TMP BY ID FROM WAIT
-                                    popByID(wait,idToRemove);
+									popByID(wait, idToRemove);
 								}
 								else
 								{
@@ -291,7 +291,7 @@ int main(int argc, char *argv[])
 									int idToRemove = tmp->jobID;
 									tmp = tmp->next;
 									// TODO REMOVE TMP BY ID FROM hQ1
-                                    popByID(hQ1,idToRemove);
+									popByID(hQ1, idToRemove);
 								}
 								else
 								{
@@ -307,7 +307,7 @@ int main(int argc, char *argv[])
 									int idToRemove = tmp->jobID;
 									tmp = tmp->next;
 									// TODO REMOVE TMP BY ID FROM hQ1
-                                    popByID(hQ1,idToRemove);
+									popByID(hQ1, idToRemove);
 								}
 								else
 								{
@@ -315,7 +315,7 @@ int main(int argc, char *argv[])
 								}
 							}
 							// Free running
-							
+
 							free(running);
 							running = NULL;
 							/*
@@ -336,13 +336,13 @@ int main(int argc, char *argv[])
 							workTime = 0;
 						}
 						if (running)
-							printf("%d\n",running->timeLeft);
+							printf("%d\n", running->timeLeft);
 					}
 					else
 					{
 						// Does not have any devices to work with
 						workTime = 0;
-						printf("Process %d waiting for deviecs from quantum %d to %d\n",running->jobID,quantumStart,quantumEnd);
+						printf("Process %d waiting for deviecs from quantum %d to %d\n", running->jobID, quantumStart, quantumEnd);
 					}
 				}
 				else
@@ -379,7 +379,7 @@ int main(int argc, char *argv[])
 				pushFIFO(submit, id, aT, mem, dev, run, pri, 0, run, (-1), 0, 0);
 				if (mem < M && dev < S)
 				{
-					if (mem < memLeft)
+					if (mem <= memLeft)
 					{
 						// There is enough memory to run
 						pushFIFO(ready, id, aT, mem, dev, run, pri, 0, run, (-1), 0, 0);
@@ -416,7 +416,7 @@ int main(int argc, char *argv[])
 			// Request for device
 			else if (operation == 2)
 			{
-				
+
 				if (id == running->jobID)
 				{
 					if (running->devicesAssigned + dev <= running->serial)
@@ -448,89 +448,101 @@ int main(int argc, char *argv[])
 							running = NULL;
 						}
 					}
+					// Interrupt, new quantum
+					quantumStart = T;
+					quantumEnd = T + Q;
+					eventStart = T;
+					eventEnd = T + Q;
 				}
-				// Interrupt, new quantum
-				quantumStart = T;
-				quantumEnd = T + Q;
-				eventStart = T;
-				eventEnd = T + Q;
+				else
+				{
+					// Invalid request, continue as normal
+					eventStart = aT;
+					eventEnd = quantumEnd;
+				}
 			}
 			// Release for device
 			else if (operation == 3)
 			{
-				if (running!=NULL){
-				if (id == running->jobID)
+				if (running != NULL)
 				{
-					if (running->devicesAssigned - dev > 0)
+					if (id == running->jobID)
 					{
-						// Assign devices to running process
-						running->devicesAssigned -= dev;
-						devLeft += dev;
-						// Move running process to end of ready queue
-						pushNodeFIFO(ready, running);
-						// Pop of top of ready queue to put on running
-						//printf("here\n");
-						if (ready->head != NULL)
+						if (running->devicesAssigned - dev >= 0)
 						{
-							cpyNode(running, ready->head);
-							pop(ready);
-						}
-						else
-						{
-							free(running);
-							running = NULL;
-						}
-						int max = wait->size;
-						int c = 0;
-						struct node *tmp = malloc(nodeSize);
-						//printf("here\n");
-						while (wait->head && c < max)
-						{
-							// Pop off devices on wait queue if possible
-							cpyNode(tmp, wait->head);
-							pop(wait);
-							// if (needed - assigned - available < 0), put on ready
-							if (tmp->serial - tmp->devicesAssigned - devLeft)
+							// Assign devices to running process
+							running->devicesAssigned -= dev;
+							devLeft += dev;
+							// Move running process to end of ready queue
+							pushNodeFIFO(ready, running);
+							// Pop of top of ready queue to put on running
+							//printf("here\n");
+							if (ready->head != NULL)
 							{
-								pushNodeFIFO(ready, tmp);
+								cpyNode(running, ready->head);
+								pop(ready);
 							}
 							else
 							{
-								// Put it back on wait queue
-								pushNodeFIFO(wait, tmp);
-								// avoid double counting
-								c++;
-								// if c>max, that means that we have scanned all the items on the wait queue
+								free(running);
+								running = NULL;
 							}
-						}
-						
-						free(tmp);
-					}
-					else
-					{
-						
-						// Not enough devices to unassing, put on wait
-						pushNodeFIFO(wait, running);
-						// Pop of top of ready queue to put on running
-						if (ready->head != NULL)
-						{
-							cpyNode(running, ready->head);
-							pop(ready);
+							int max = wait->size;
+							int c = 0;
+							struct node *tmp = malloc(nodeSize);
+							//printf("here\n");
+							while (wait->head && c < max)
+							{
+								// Pop off devices on wait queue if possible
+								cpyNode(tmp, wait->head);
+								pop(wait);
+								// if (needed - assigned - available < 0), put on ready
+								if (tmp->serial - tmp->devicesAssigned - devLeft)
+								{
+									pushNodeFIFO(ready, tmp);
+								}
+								else
+								{
+									// Put it back on wait queue
+									pushNodeFIFO(wait, tmp);
+									// avoid double counting
+									c++;
+									// if c>max, that means that we have scanned all the items on the wait queue
+								}
+							}
+
+							free(tmp);
 						}
 						else
 						{
-							free(running);
-							running = NULL;
+
+							// Not enough devices to unassing, put on wait
+							pushNodeFIFO(wait, running);
+							// Pop of top of ready queue to put on running
+							if (ready->head != NULL)
+							{
+								cpyNode(running, ready->head);
+								pop(ready);
+							}
+							else
+							{
+								free(running);
+								running = NULL;
+							}
 						}
 					}
+					// interrupt, new quantum
+					quantumStart = T;
+					quantumEnd = T + Q;
+					eventStart = T;
+					eventEnd = T + Q;
 				}
+				else
+				{
+					// Invalid request, continue as normal
+					eventStart = aT;
+					eventEnd = quantumEnd;
 				}
-				// Interrupt, new quantum
-				quantumStart = T;
-				quantumEnd = T + Q;
-				eventStart = T;
-				eventEnd = T + Q;
-				//printf("Here\n");
 			}
 			// Display
 			else if (operation == 4)
@@ -557,15 +569,13 @@ int main(int argc, char *argv[])
 				fprintf(out, "\t\"total_devices\":%d,\n", S);
 				fprintf(out, "\t\"available_devices\":%d,\n", devavai);
 				fprintf(out, "\t\"quantum\":%d,\n", Q);
-//				fprintf(out, "\t\"turnaround\":%d,\n", turn);
-//				fprintf(out, "\t\"weighted_turnaround\":%d,\n", turn);
+				//				fprintf(out, "\t\"turnaround\":%d,\n", turn);
+				//				fprintf(out, "\t\"weighted_turnaround\":%d,\n", turn);
 
-				fprintf(out, "\t\"turnaround\":%f,\n", turn);               //changed this since turn is a float
-				fprintf(out, "\t\"weighted_turnaround\":%f,\n", turn);      //changed this since turn is a float
-                
-                
-                
-                fprintf(out, "\t\"readyq\":[\n");
+				fprintf(out, "\t\"turnaround\":%f,\n", getAVGTurnaround(complete));			 //changed this since turn is a float
+				fprintf(out, "\t\"weighted_turnaround\":%f,\n", getAVGTurnaround(complete)); //changed this since turn is a float
+
+				fprintf(out, "\t\"readyq\":[\n");
 				printJobIDs(out, ready);
 				fprintf(out, "\t],\n");
 				fprintf(out, "\t\"running\":");
@@ -592,16 +602,16 @@ int main(int argc, char *argv[])
 				fprintf(out, "\t\"hQ1\":[\n");
 				printJobIDs(out, hQ1);
 				fprintf(out, "\t],\n");
-				
+
 				fprintf(out, "\t\"hQ2\":[\n");
 				printJobIDs(out, hQ2);
 				fprintf(out, "\t],\n");
-				
+
 				fprintf(out, "\t\"job\":[\n");
 				printDetail(out, all);
 				fprintf(out, "\t]\n");
 
-				fprintf(out, "}");                      //fprintf(out, "}\0");
+				fprintf(out, "}"); //fprintf(out, "}\0");
 
 				free(outName);
 				free(name);

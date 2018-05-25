@@ -426,6 +426,10 @@ struct LL *popByID(struct LL *l,int id){
 }//popbyID
 
 double getAVGTurnaround(struct LL* l){
+    if ( l == NULL){
+        return NULL;
+    }
+    
     int sum;
     int numNodes = 0;
     if(l){

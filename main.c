@@ -214,8 +214,7 @@ int main(int argc, char *argv[])
 				// if there is a job running
 				if (running != NULL)
 				{
-					printf("at:%d, T:%d\n", aT, T);
-					// TODO FINISH REMOVAL OF NODES IN QUEUES
+					//printf("at:%d, T:%d\n", aT, T);
 					// Have enough devices to run
 					if (running->devicesAssigned == running->serial)
 					{
@@ -335,14 +334,13 @@ int main(int argc, char *argv[])
 							*/
 							workTime = 0;
 						}
-						if (running)
-							printf("%d\n", running->timeLeft);
+						
 					}
 					else
 					{
 						// Does not have any devices to work with
 						workTime = 0;
-						printf("Process %d waiting for deviecs from quantum %d to %d\n", running->jobID, quantumStart, quantumEnd);
+						//printf("Process %d waiting for deviecs from quantum %d to %d\n", running->jobID, quantumStart, quantumEnd);
 					}
 				}
 				else
@@ -624,6 +622,33 @@ int main(int argc, char *argv[])
 			if (status != EOFREACHED)
 			{
 				operation = processLine(buff, &aT, &id, &pri, &mem, &dev, &run, &operation);
+				if (aT == 9999)
+				{
+					if (running != NULL)
+					{
+						printf("Currently running\n");
+						printNode(running);
+					}
+					else
+					{
+						printf("Not running anything\n");
+					}
+
+					printf("ready: \n");
+					printLL(ready);
+					printf("wait: \n");
+					printLL(wait);
+					printf("hQ1: \n");
+					printLL(hQ1);
+					printf("hQ2: \n");
+					printLL(hQ2);
+					printf("complete: \n");
+					printLL(complete);
+					printf("all \n");
+					printLL(all);
+				
+					break;
+				}
 			}
 			else
 				break;
@@ -637,28 +662,6 @@ int main(int argc, char *argv[])
 			eventStart = quantumStart;
 		}
 	}
-
-	if (running != NULL)
-	{
-		printf("Currently running\n");
-		printNode(running);
-	}
-	else
-	{
-		printf("Not running anything\n");
-	}
-	printf("ready: \n");
-	printLL(ready);
-	printf("wait: \n");
-	printLL(wait);
-	printf("hQ1: \n");
-	printLL(hQ1);
-	printf("hQ2: \n");
-	printLL(hQ2);
-	printf("complete: \n");
-	printLL(complete);
-	printf("all \n");
-	printLL(all);
 	list_free(ready);
 	list_free(wait);
 	list_free(hQ1);

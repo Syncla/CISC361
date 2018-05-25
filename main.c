@@ -334,7 +334,6 @@ int main(int argc, char *argv[])
 							*/
 							workTime = 0;
 						}
-						
 					}
 					else
 					{
@@ -417,14 +416,18 @@ int main(int argc, char *argv[])
 
 				if (id == running->jobID)
 				{
-					if (running->devicesAssigned + dev <= running->serial)
+					if (running->devicesAssigned + dev <= running->serial && dev < devLeft)
 					{
 						// Assign devices to running process
 						running->devicesAssigned += dev;
 						devLeft -= dev;
 						// Move running process to end of ready queue
-
 						pushNodeFIFO(ready, running);
+						struct node *t = getById(all, running->jobID);
+						if (t)
+						{
+							t->devicesAssigned = running->devicesAssigned;
+						}
 						// Pop of top of ready queue to put on running
 
 						cpyNode(running, ready->head);
@@ -468,9 +471,17 @@ int main(int argc, char *argv[])
 					{
 						if (running->devicesAssigned - dev >= 0)
 						{
+
 							// Assign devices to running process
 							running->devicesAssigned -= dev;
+
 							devLeft += dev;
+							struct node *t = getById(all, running->jobID);
+							if (t)
+							{
+								t->devicesAssigned = running->devicesAssigned;
+							}
+							//printf("Allocated devices %d %d\n",running->jobID,devLeft);
 							// Move running process to end of ready queue
 							pushNodeFIFO(ready, running);
 							// Pop of top of ready queue to put on running
@@ -495,7 +506,7 @@ int main(int argc, char *argv[])
 								cpyNode(tmp, wait->head);
 								pop(wait);
 								// if (needed - assigned - available < 0), put on ready
-								if (tmp->serial - tmp->devicesAssigned - devLeft)
+								if (tmp->serial - tmp->devicesAssigned - devLeft >= 0)
 								{
 									pushNodeFIFO(ready, tmp);
 								}
@@ -646,7 +657,7 @@ int main(int argc, char *argv[])
 					printLL(complete);
 					printf("all \n");
 					printLL(all);
-				
+
 					break;
 				}
 			}

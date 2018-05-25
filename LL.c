@@ -326,6 +326,17 @@ int getAssignedDevices(struct LL *l){
     
 }//GETASSIGNEDDEVICES
 
+struct node * getById(struct LL *l, int id ){
+	struct node * n = NULL;
+	if(l){
+        for (n=l->head;n;n=n->next){
+            if (n->jobID == id){
+				break;
+			}
+        }//for
+    }//IF
+	return n;
+}
 int getAssignedMemory(struct LL *l){
     int am = 0;
     
@@ -372,7 +383,8 @@ void printDetail(FILE *out, struct LL *l){
     fprintf(out, "\n");
 	
     if (l){
-		for (n = l->head; n; n = n->next){
+		n = l->head;
+		for (; n; n = n->next){
             if (n != l->tail){
                 fprintf(out,"\t{\n");
                 fprintf(out,"\t\t\"arrival_time\": %d,\n",n->arrivalTime);
